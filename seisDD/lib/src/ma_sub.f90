@@ -296,15 +296,15 @@ subroutine mtm_adj(syn,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
     ! frequency-domain taper
     integer :: nfrange, nflen 
     real(kind=CUSTOM_REAL):: taper_percentage=1.0
-    character(len=10) :: taper_type="cos_p10"
+    character(len=4) :: taper_type="cosp"
     real(kind=CUSTOM_REAL), dimension(:),allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(NPT) :: w_taper, wp_taper, wq_taper
     real(kind=CUSTOM_REAL) :: ffac, dtau_wtr, dlnA_wtr, err_t, err_A
 
     !! fft -- double size
     ! FFT parameters 
-    real(kind=SIZE_DOUBLE) :: ampmax,wtr_mtm_use,wtr_use
-    integer :: i,ictaper,iom
+    real(kind=SIZE_DOUBLE) :: ampmax,wtr_use
+    integer :: i,ictaper
 
     !! fft to evaluate adj
     ! tapered data in time domain
@@ -455,15 +455,6 @@ subroutine mtm_adj(syn,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
         * dcmplx(dlnA_w(i_fstart: i_fend),0.) &
         * dcmplx(wq_taper(i_fstart: i_fend),0.)
 
-       if (DISPLAY_DETAILS) then
-        write(filename,'(i)') ictaper
-        open(1,file=trim(output_dir)//'/'//'adj_taper_'//trim(adjustl(filename)),status='unknown')
-        do i=i_fstart,i_fend
-        write(1,*) abs(wp_taper(i))
-        enddo
-        close(1)
-    endif
- 
     ! IFFT into the time domain
     call fftinv(LNPT,pwc_adj,dble(REVERSE_FFT),dble(deltat),dtau_pj_t)
     call fftinv(LNPT,qwc_adj,dble(REVERSE_FFT),dble(deltat),dlnA_qj_t)
@@ -504,15 +495,12 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
     ! frequency-domain taper
     integer :: nfrange, nflen
     real(kind=CUSTOM_REAL):: taper_percentage=1.0
-    character(len=10) :: taper_type="cos_p10"
+    character(len=4) :: taper_type="cosp"
     real(kind=CUSTOM_REAL), dimension(:),allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(NPT) :: w_taper, wp_taper, wq_taper
     real(kind=CUSTOM_REAL) :: ffac, ddtau_wtr, ddlnA_wtr, err_t, err_A
 
-    !! fft -- double size
-    ! FFT parameters 
-    real(kind=SIZE_DOUBLE) :: ampmax,wtr_mtm_use,wtr_use
-    integer :: i,ictaper,iom
+    integer :: i,ictaper
 
     !! fft to evaluate adj
     ! tapered data in time domain
@@ -753,11 +741,10 @@ subroutine CC_similarity(d1,d2,npts,deltat,&
     real(kind=CUSTOM_REAL), intent(in) :: deltat
     real(kind=CUSTOM_REAL), intent(in) :: tstart1,tend1,tstart2,tend2
     real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
-    character(len=10), intent(in) :: taper_type
+    character(len=4), intent(in) :: taper_type
     real(kind=CUSTOM_REAL), intent(out) :: cc_max
 
     ! window
-    integer :: i
     integer :: nlen1,nlen2,nlen
     integer :: i_tstart1,i_tend1,i_tstart2,i_tend2
     real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas1, tas2

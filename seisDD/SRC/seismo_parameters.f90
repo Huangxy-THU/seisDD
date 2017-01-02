@@ -40,8 +40,8 @@ INTEGER, PARAMETER :: Wscale=0
 !window
 LOGICAL :: TIME_WINDOW=.false.
 INTEGER, PARAMETER :: window_type=3
-REAL(KIND=CUSTOM_REAL) :: taper_percentage=0.2
-CHARACTER (LEN=10) :: taper_type='hann'
+REAL(KIND=CUSTOM_REAL), PARAMETER :: taper_percentage=0.2
+CHARACTER (LEN=4) :: taper_type='hann'
 REAL(KIND=CUSTOM_REAL), PARAMETER :: min_window_len=1.0/f0
 REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_TOP=3900
 REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_BOT=3100

@@ -62,6 +62,17 @@ read -p "Is the correct workflow selected (y/n)?" yn
 if [ $yn == 'n' ]; then
     exit
 fi
+# check compiler
+echo 
+echo "check the compiler for mpif90"
+echo "----------------------------"
+mpif90 -v
+echo "----------------------------"
+read -p "the compiler is $compiler (y/n)?" yn
+if [ $yn == 'n' ]; then
+    exit
+fi
+
 ## not modeling 
 if [ "${job,,}" != "${var1,,}"  ]; then
     echo
@@ -77,6 +88,7 @@ if [ "${job,,}" != "${var1,,}"  ]; then
         rm -rf *.mod make_*
         cp $package_path/lib/make_lib ./make_lib
         FILE="make_lib"
+        sed -e "s#^FC=.*#FC=${compiler}#g"  $FILE > temp;  mv temp $FILE
         sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/lib/src#g"  $FILE > temp;  mv temp $FILE
         sed -e "s#^MOD_DIR=.*#MOD_DIR=./bin#g"  $FILE > temp;  mv temp $FILE
         sed -e "s#^LIB_preprocess=.*#LIB_preprocess=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
@@ -87,8 +99,9 @@ if [ "${job,,}" != "${var1,,}"  ]; then
     echo 
     read -p "Do you wish to comiple source codes (y/n)?" yn
     if [ $yn == 'y' ]; then
-        cp $package_path/make/make_$compiler ./make_file
+        cp $package_path/make/make_file ./make_file
         FILE="make_file"
+        sed -e "s#^FC=.*#FC=${compiler}#g"  $FILE > temp;  mv temp $FILE
         sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/SRC#g"  $FILE > temp;  mv temp $FILE
         sed -e "s#^LIB_seismo=.*#LIB_seismo=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
         make -f make_file clean

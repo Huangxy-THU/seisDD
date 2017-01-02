@@ -10,6 +10,7 @@ max_nproc_per_node=16 # max number of processors per node
 ntasks=1
 NPROC_SPECFEM=4
 WallTime=10
+## figure out the compiler for mpif90: >>$mpif90 -v
 compiler='ifort'
 GPU_MODE=false
 job='kernel' # modeling,kernel,inversion

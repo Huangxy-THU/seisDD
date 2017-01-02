@@ -1,6 +1,11 @@
-FC = ifort
+FC=ifort
+ifeq ($(FC),gfortran)
 FCFLAGS=-g
-FLAGS=-sox -cpp  -traceback -w -ftz  -O3 -xSSSE3 -no-ip -fno-fnalias -fno-alias -vec-report1
+FLAGS=-Wall -fbounds-check
+else
+FCFLAGS=-g
+FLAGS=-O3 -xSSSE3 -no-ip -fno-fnalias -fno-alias -vec-report1 -assume byterecl -sox -cpp -traceback -w -ftz
+endif
 
 SRC_DIR=./src
 MOD_DIR=./src

@@ -1,112 +1,6 @@
 !! main subroutines for preprocessing
 !! created by Yanhua O. Yuan ( yanhuay@princeton.edu)
 
-subroutine preprocess(d,NSTEP,deltat,t0,f0,&
-        is_laplace,dis_sr,S_x,S_t, &
-        is_window,window_type,V_slow,V_fast,&
-        mute_near,offset_near,mute_far,offset_far,&
-        Wscale,&
-        istart,iend)
-
-    !! preprocessing library
-    use constants
-    implicit none
-
-    real(kind=CUSTOM_REAL), dimension(*), intent(out) :: d
-    real(kind=CUSTOM_REAL), intent(in) :: deltat,t0,f0
-    integer, intent(in) :: NSTEP, Wscale
-    integer, intent(in) :: is_laplace, is_window, window_type,mute_near,mute_far
-    real(kind=CUSTOM_REAL), intent(in) :: dis_sr, S_x, S_t,V_slow,V_fast,offset_near,offset_far
-    integer, intent(out) :: istart,iend
-
-    integer :: itime,NA
-    real(kind=CUSTOM_REAL) :: win(NSTEP)
-
-    istart=1
-    iend=NSTEP
-
-    !! mute 
-    if(mute_near .eq. 1 .and. dis_sr<=offset_near ) then
-        d(1:NSTEP) =0.0
-        istart=NSTEP
-        iend=0
-    endif 
-    if(mute_far .eq. 1 .and. dis_sr>=offset_far) then
-        d(1:NSTEP) =0.0
-        istart=NSTEP
-        iend=0
-    endif
-
-    !! laplace damping spatially and temporally 
-    if (is_laplace .eq. 1 .and. istart<iend) then
-        ! spatial
-        d(1:NSTEP)=d(1:NSTEP)*exp(-dis_sr*S_x)
-        ! temporal
-        do itime=1,NSTEP
-        d(itime)=d(itime)*exp(-((itime-1)*deltat*S_t))
-        enddo
-    endif
-
-    ! dip-window using slopes 
-    if(is_window .eq. 1.and. istart<iend) then
-        ! estimate surface-wave arrivals
-        istart=max(int((dis_sr/V_fast+t0-1.2/f0)/deltat)+1,istart)
-        iend=min(int((dis_sr/V_slow+3.0/f0+t0+1.2/f0)/deltat)+1,iend)
-        if(istart<iend) then 
-            ! window
-            win(1:NSTEP)=0.d0
-            call window(NSTEP,istart,iend,window_type,win)
-            d(1:NSTEP)=d(1:NSTEP)*win(1:NSTEP)
-        endif 
-    endif ! window
-
-    ! WT filtering
-    if( Wscale .gt. 0.and. istart<iend) then
-        call WT(d,NSTEP,Wscale,NA)
-        istart=max(istart-NA,1)
-        iend=min(iend+NA,NSTEP) 
-    endif
-
-end subroutine preprocess
-
-!----------------------------------------------------------------------
-
-subroutine window(npts,istart,iend,window_type,win)
-    use constants
-    implicit none
-
-    integer, intent(in) :: npts, istart,iend, window_type
-    real(kind=CUSTOM_REAL), dimension(*), intent(out) :: win
-
-    integer ::  i, nlen
-    real(kind=CUSTOM_REAL) :: sfac1
-    real(kind=CUSTOM_REAL), dimension(npts) :: fac
-
-    nlen = iend - istart+1
-
-    ! some constants
-    sfac1 = (2./real(nlen))**2   ! for Welch taper
-
-    ! initialization
-    win(1:npts) = 0.d0
-    fac(1:npts) = 0.d0
-
-    do i = 1, nlen
-    if(window_type ==2) then
-        fac(i) = 1 - sfac1*((i-1) - real(nlen)/2.)**2
-    elseif(window_type ==3) then
-        fac(i) = 1. - cos(PI*(i-1)/(nlen-1))**ipwr_t
-    elseif(window_type ==4) then
-        fac(i) = 0.5 - 0.5*cos(TWOPI*(i-1)/(nlen-1))
-    else
-        fac(i) = 1. ! boxcar window
-    endif
-    enddo
-
-    !! return 
-    win(istart:iend)=fac(1:nlen)
-
-end subroutine window
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine window_taper(npts,taper_percentage,taper_type,tas)
     use constants
@@ -115,7 +9,7 @@ subroutine window_taper(npts,taper_percentage,taper_type,tas)
     ! input parameters
     integer, intent(in) :: npts
     real, intent(in) :: taper_percentage
-    character(len=10) :: taper_type
+    character(len=4) :: taper_type
     real, dimension(*), intent(out) :: tas
 
     integer :: taper_len
@@ -131,18 +25,18 @@ subroutine window_taper(npts,taper_percentage,taper_type,tas)
     endif
 
     do i=1, taper_len
-    if (trim(taper_type) == 'boxcar') then
+    if (trim(taper_type) == 'boxc') then
         tas(i)=1.0
     elseif (trim(taper_type) == 'hann') then
         tas(i)=0.5 - 0.5 * cos(2.0 * PI * (i-1) / (2 * taper_len - 1))
-    elseif (trim(taper_type) == 'hamming') then
+    elseif (trim(taper_type) == 'hamm') then
         tas(i)=0.54 - 0.46 * cos(2.0 * PI * (i-1) / (2 * taper_len - 1))
-    elseif (trim(taper_type) == 'cos') then
+    elseif (trim(taper_type) == 'cose') then
         tas(i)=cos(PI * (i-1) / (2 * taper_len - 1) - PI / 2.0) ** ipwr_t
-    elseif (trim(taper_type) == 'cos_p10') then
+    elseif (trim(taper_type) == 'cosp') then
         tas(i)=1.0 - cos(PI * (i-1) / (2 * taper_len - 1)) ** ipwr_t
     else
-        print*,'taper_type must be among "boxcar"/"hann"/"hamming"/"cos"/"cos_p10"!'
+        print*,'taper_type must be among "boxc"/"hann"/"hamm"/"cose"/"cosp"!'
     endif
         tas(npts-i+1)=tas(i)
     enddo

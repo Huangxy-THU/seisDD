@@ -1,7 +1,12 @@
-FC = ifort
-FCFLAGS=-g
-FLAGS=-O3 -xSSSE3 -no-ip -fno-fnalias -fno-alias -vec-report1 -assume byterecl -sox -cpp  -traceback -w -ftz
+FC=ifort
 MPIFC=mpif90
+ifeq ($(FC),gfortran)
+FCFLAGS=-g
+FLAGS=-Wall -fbounds-check
+else
+FCFLAGS=-g
+FLAGS=-O3 -xSSSE3 -no-ip -fno-fnalias -fno-alias -vec-report1 -assume byterecl -sox -cpp -traceback -w -ftz
+endif
 
 SRC_DIR=SRC
 LIB_seismo=$(SRC_DIR)/../lib/seismo.a

@@ -10,18 +10,20 @@ source ~/.bashrc
 echo $seisDD
 # make sure $seisDD is the same as '/path/to/seisDD' 
 
+## how to figure out the compiler for mpif90
+$mpif90 -v
 # specfem2d
-# compile with ifort and mpi
+# compile with your compiler and mpi
 module load intel-mkl/11.0/1/64
 module load intel/13.0/64/13.0.1.117
 cd $seisDD/specfem2d
 ## with mpi for parallel simulation
 module load openmpi/intel-13.0/1.6.3/64
-./configure FC=ifort --with-mpi
+./configure FC=${compiler} --with-mpi
 ## without mpi for serial simulation (queue='serial') 
-./configure FC=ifort   #(recommanded)
-## or 
 ./configure FC=gfortran
+## or 
+./configure FC=ifort
 # compile
 make all
 

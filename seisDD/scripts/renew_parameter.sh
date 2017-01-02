@@ -70,14 +70,11 @@ fi
 if [ ! -z "$TIME_WINDOW" ]; then
     sed -e "s#^LOGICAL :: TIME_WINDOW=.*#LOGICAL :: TIME_WINDOW=.$TIME_WINDOW.#g"  $FILE > temp;  mv temp $FILE
 fi
-if [ ! -z "$window_type" ]; then
-    sed -e "s#^INTEGER, PARAMETER :: window_type=.*#INTEGER, PARAMETER :: window_type=$window_type#g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "${taper_percentage}" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: taper_percentage=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: taper_percentage=${taper_percentage} #g"  $FILE > temp;  mv temp $FILE
 fi
-if [ ! -z "$T0_TOP" ]; then
-    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_TOP=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_TOP=${T0_TOP} #g"  $FILE > temp;  mv temp $FILE
-fi
-if [ ! -z "$T0_BOT" ]; then
-    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_BOT=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_BOT=${T0_BOT} #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "${taper_type}" ]; then
+    sed -e "s#^CHARACTER (LEN=4) :: taper_type=.*# CHARACTER (LEN=4) :: taper_type='${taper_type}'#g"  $FILE > temp;  mv temp $FILE
 fi
 if [ ! -z "$VEL_TOP" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_TOP=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_TOP=${VEL_TOP} #g"  $FILE > temp;  mv temp $FILE
