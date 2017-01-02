@@ -70,6 +70,7 @@ real(kind=CUSTOM_REAL), parameter :: mt_threshold=0.9! eigenvalue threshold
 !integer, parameter :: MW=10 ! number of segments of uncorrelated frequency points 
 real(kind=CUSTOM_REAL), parameter :: NW=3
 integer, parameter :: NTAPER=int(2*NW-1)
+real(kind=SIZE_DOUBLE), dimension(:,:),allocatable :: tapers
 ! ncyle in window 
 integer, parameter :: ncycle_in_window=3
 ! normalize
@@ -98,6 +99,7 @@ integer, parameter :: gdim_vs=5
 integer, parameter :: mdim_rho=4
 integer, parameter :: mdim_vp=5
 integer, parameter :: mdim_vs=6
+character (len=MAX_FILENAME_LEN) :: filename
 
 ! Display 
 logical :: DISPLAY_DETAILS=.false.

@@ -139,11 +139,12 @@ subroutine window_taper(npts,taper_percentage,taper_type,tas)
         tas(i)=0.54 - 0.46 * cos(2.0 * PI * (i-1) / (2 * taper_len - 1))
     elseif (trim(taper_type) == 'cos') then
         tas(i)=cos(PI * (i-1) / (2 * taper_len - 1) - PI / 2.0) ** ipwr_t
+    elseif (trim(taper_type) == 'cos_p10') then
+        tas(i)=1.0 - cos(PI * (i-1) / (2 * taper_len - 1)) ** ipwr_t
     else
-        print*,'taper_type must be among "boxcar"/"hann"/"hamming"/"cos"!'
+        print*,'taper_type must be among "boxcar"/"hann"/"hamming"/"cos"/"cos_p10"!'
     endif
         tas(npts-i+1)=tas(i)
-
     enddo
 
 end subroutine window_taper
@@ -296,7 +297,7 @@ subroutine WT(seism,NSTEP,level,NA)
     real(kind=CUSTOM_REAL),dimension(:,:),allocatable :: basis, seism_WT
     real(kind=CUSTOM_REAL) :: wc 
     real(kind=CUSTOM_REAL),dimension(:), allocatable :: nonzero_basis
-    character(len=500) :: fname,filename
+    character(len=500) :: fname
 
     NA=0
     if(level .gt. 0) then

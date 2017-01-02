@@ -812,12 +812,15 @@ subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
     real(kind=CUSTOM_REAL), dimension(NPT) :: wvec,fvec
     real(kind=CUSTOM_REAL) :: df,df_new,dw
 
-    ! mt 
+    !! multitaper
     integer :: i_fstart, i_fend
+    real(kind=SIZE_DOUBLE), dimension(NPT) :: ey1,ey2
+    integer :: ictaper
     real(kind=CUSTOM_REAL), dimension(NPT) :: dtau_w, dlnA_w,err_dtau_mt,err_dlnA_mt
     complex(CUSTOM_REAL), dimension(NPT) :: trans_func
 
-    ! adjoint
+    ! misfit & adjoint
+    real(kind=CUSTOM_REAL) :: misfit_p, misfit_q
     real(kind=CUSTOM_REAL), dimension(npts) :: adj_p_tw,adj_q_tw
 
     !! window
@@ -890,6 +893,7 @@ subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
     if( DISPLAY_DETAILS) then
         print*
         print*, 'find the spectral boundaries for reliable measurement'
+        print*, 'min, max time limits : ',i_tstart, i_tend, nlen
         print*, 'min, max frequency limits : ', i_fstart, i_fend
         print*, 'frequency interval df= ', df, ' dw=', dw
         print*, 'effective bandwidth (Hz) : ',fvec(i_fstart), fvec(i_fend), fvec(i_fend)-fvec(i_fstart)
@@ -899,23 +903,45 @@ subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
         print*, 'number of segments of frequency bandwidth : ', ceiling((fvec(i_fend)-fvec(i_fstart))*nlen*deltat/NW)
     endif
 
+    ! calculate the tapers
+    allocate(tapers(NPT,ntaper))
+    call staper(nlen, dble(NW), ntaper, tapers, NPT, ey1, ey2)
+
+    if( DISPLAY_DETAILS) then
+        do ictaper=1,ntaper
+        write(filename,'(i)') ictaper
+        open(1,file=trim(output_dir)//'/'//'taper_t_'//trim(adjustl(filename)),status='unknown')
+        do i = 1,nlen
+        write(1,'(f15.2,E15.5)') (i-1)*deltat,tapers(i,ictaper)
+        ! write(1,'(f15.2,<ntaper>e15.5)') (i-1)*deltat,tapers(i,1:ntaper)
+        enddo
+        close(1)
+        enddo
+    endif
 
     !! mt phase and ampplitude measurement 
     call mt_measure(d_tw,s_tw,npts,deltat,nlen,tshift,0.0,i_fstart,i_fend,&
-        wvec,&!mtaper,NW,&
+        wvec,&
         trans_func,dtau_w,dlnA_w,err_dtau_mt,err_dlnA_mt) !d-s
+
+    !! misfit & adjoint 
+    call mtm_adj(s_tw,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
+        err_dt_cc,err_dlnA_cc,&
+        err_dtau_mt,err_dlnA_mt, &
+        COMPUTE_ADJOINT, &
+        adj_p_tw,adj_q_tw, misfit_p, misfit_q)
 
     if(misfit_type=='MT') then 
         ! MT misfit
         do i=i_fstart,i_fend
-        write(IOUT,*) dtau_w(i)*sqrt(dw)
+        write(IOUT,*) dtau_w(i)*sqrt(df)
         enddo
-        misfit=0.5*sum(dtau_w(i_fstart:i_fend)**2*dw)
+        misfit=misfit_p
     elseif(misfit_type=='MA') then
         ! MA misfit
         do i=i_fstart,i_fend
-        write(IOUT,*) dlnA_w(i)*sqrt(dw)
-        misfit=0.5*sum(dlnA_w(i_fstart:i_fend)**2*dw)
+        write(IOUT,*) dlnA_w(i)*sqrt(df)
+        misfit=misfit_q
         enddo
     endif
     num=i_fend-i_fstart+1
@@ -934,17 +960,6 @@ subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
 
     !! MT adjoint
     if(COMPUTE_ADJOINT) then
-
-        ! adjoint source
-        call mtm_adj(s_tw,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
-            err_dt_cc,err_dlnA_cc,&
-            err_dtau_mt,err_dlnA_mt, &
-            ! mtaper,NW,&
-        adj_p_tw,adj_q_tw)
-
-        adj_p_tw(1:nlen) = adj_p_tw(1:nlen)
-        adj_q_tw(1:nlen) = adj_q_tw(1:nlen)
-
         ! inverse window and taper again 
         if(misfit_type=='MT') then
             adj(i_tstart:i_tend)=tas(1:nlen)*adj_p_tw(1:nlen)
@@ -969,6 +984,7 @@ subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
         call CC_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type, &
             compute_adjoint,adj,num,misfit)
     endif
+    deallocate(tapers)
 
 end subroutine MT_misfit
 ! -----------------------------------------------------------------------
@@ -1476,8 +1492,10 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     real(kind=CUSTOM_REAL), dimension(NPT) :: wvec,fvec
     real(kind=CUSTOM_REAL) :: df,df_new,dw
 
-    ! mt 
+    !! multitaper
     integer :: i_fstart1, i_fend1,i_fstart2, i_fend2,i_fstart, i_fend
+    real(kind=SIZE_DOUBLE), dimension(NPT) :: ey1,ey2
+    integer :: ictaper
     real(kind=CUSTOM_REAL), dimension(NPT) :: dtau_w_obs,dtau_w_syn
     real(kind=CUSTOM_REAL), dimension(NPT) :: dlnA_w_obs, dlnA_w_syn
     real(kind=CUSTOM_REAL), dimension(NPT) :: ddtau_w, ddlnA_w
@@ -1605,14 +1623,29 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
         print*
     endif
 
+    ! calculate the tapers
+    allocate(tapers(NPT,ntaper))
+    call staper(nlen, dble(NW), ntaper, tapers, NPT, ey1, ey2)
+    print*, nlen, dble(NW), ntaper
+
+    if( DISPLAY_DETAILS) then
+        do ictaper=1,ntaper
+        write(filename,'(i)') ictaper
+        open(1,file=trim(output_dir)//'/'//'taper_t_'//trim(adjustl(filename)),status='unknown')
+        do i = 1,nlen
+        write(1,'(f15.2,E15.5)') (i-1)*deltat,tapers(i,ictaper)
+        ! write(1,'(f15.2,<ntaper>e15.5)') (i-1)*deltat,tapers(i,1:ntaper)
+        enddo
+        close(1)
+        enddo
+    endif
+
     !! mt phase and ampplitude measurement 
     call mt_measure(d1_tw,d2_tw_cc,npts,deltat,nlen,tshift_obs,dlnA_obs,i_fstart,i_fend,&
         wvec,&
-        !mtaper,NW,&
     trans_func_obs,dtau_w_obs,dlnA_w_obs,err_dtau_mt_obs,err_dlnA_mt_obs)
     call mt_measure(s1_tw,s2_tw_cc,npts,deltat,nlen,tshift_syn,dlnA_syn,i_fstart,i_fend,&
         wvec,&
-        !mtaper,NW,&
     trans_func_syn,dtau_w_syn,dlnA_w_syn,err_dtau_mt_syn,err_dlnA_mt_syn)
     ! double-difference measurement 
     ddtau_w = dtau_w_syn-dtau_w_obs
@@ -1717,6 +1750,6 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     endif
  
     deallocate(tas1,tas2)
-
+    deallocate(tapers)
 end subroutine MT_misfit_DD
 !-----------------------------------------------------------------------
