@@ -479,14 +479,14 @@ subroutine mtm_adj(syn,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
 
     deallocate(syn_dtw_ho_all)
     deallocate(syn_vtw_ho_all)
-endif
+endif ! compute_adjoint
 
 end subroutine mtm_adj
 ! ------------------------------------------------------------------------------------
 subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,&
         err_dt_cc_obs,err_dt_cc_syn,err_dlnA_cc_obs,err_dlnA_cc_syn, &
         err_dtau_mt_obs,err_dtau_mt_syn,err_dlnA_mt_obs,err_dlnA_mt_syn, &
-        fp1,fp2,fq1,fq2)
+        compute_adjoint,fp1,fp2,fq1,fq2,misfit_p,misfit_q)
     use constants
     implicit none
 
@@ -497,10 +497,15 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
     integer, intent(in) :: i_fstart,i_fend
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: ddtau_w,ddlnA_w
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: err_dtau_mt_obs,err_dtau_mt_syn,err_dlnA_mt_obs,err_dlnA_mt_syn
+    logical, intent(in) :: compute_adjoint
     real(kind=CUSTOM_REAL), dimension(*), intent(out) :: fp1,fp2,fq1,fq2
+    real(kind=CUSTOM_REAL), intent(out) :: misfit_p, misfit_q
 
-    ! frequency-domain taper 
-    integer :: nfrange, window_type =3
+    ! frequency-domain taper
+    integer :: nfrange, nflen
+    real(kind=CUSTOM_REAL):: taper_percentage=1.0
+    character(len=10) :: taper_type="cos_p10"
+    real(kind=CUSTOM_REAL), dimension(:),allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(NPT) :: w_taper, wp_taper, wq_taper
     real(kind=CUSTOM_REAL) :: ffac, ddtau_wtr, ddlnA_wtr, err_t, err_A
 
@@ -508,10 +513,6 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
     ! FFT parameters 
     real(kind=SIZE_DOUBLE) :: ampmax,wtr_mtm_use,wtr_use
     integer :: i,ictaper,iom
-
-    !! multitaper
-    real(kind=SIZE_DOUBLE), dimension(NPT) :: ey1,ey2
-    real(kind=SIZE_DOUBLE), dimension(:,:),allocatable :: tas
 
     !! fft to evaluate adj
     ! tapered data in time domain
@@ -526,36 +527,16 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
     complex (SIZE_DOUBLE), dimension(NPT) :: fp1_adj,fp2_adj,fq1_adj,fq2_adj
     real(kind=SIZE_DOUBLE), dimension(NPT) :: fp1_adj_t,fp2_adj_t,fq1_adj_t,fq2_adj_t
 
-    ! frequency-domain taper 
-    !    integer :: nfrange, window_type =3
-    !    real(kind=CUSTOM_REAL), dimension(NPT) :: w_taper, wp_taper, wq_taper, ey1, ey2
-    !    real(kind=CUSTOM_REAL) :: ffac, ddtau_wtr, ddlnA_wtr, err_t, err_A
-
-    ! mtm adj
-    !    real(kind=CUSTOM_REAL), dimension(NPT) :: s1_dtw_h, s1_vtw_h,s2_dtw_h, s2_vtw_h
-    !    complex (CUSTOM_REAL), dimension(:,:),allocatable ::  s1_dtw_ho_all,s1_vtw_ho_all
-    !    complex (CUSTOM_REAL), dimension(:,:),allocatable ::  s2_dtw_ho_all,s2_vtw_ho_all
-    !    comple (CUSTOM_REAL), dimension(NPT) :: Mtr1_mtm,Mtr2_mtm,Mtr3_mtm,Mtr4_mtm,Mtr5_mtm
-    !    complex (CUSTOM_REAL), dimension(NPT) :: p1_adj,pw1_adj,p2_adj,pw2_adj
-    !    complex (CUSTOM_REAL), dimension(NPT) :: q1_adj,qw1_adj,q2_adj,qw2_adj
-    !    complex (CUSTOM_REAL), dimension(NPT) :: fp1_adj,fp2_adj,fq1_adj,fq2_adj
-    !    real(kind=CUSTOM_REAL), dimension(NPT) :: fp1_adj_t,fp2_adj_t,fq1_adj_t,fq2_adj_t
-    !    real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: tas
-
     ! frequency-domain tapers
     ! THIS CHOICE WILL HAVE AN EFFECT ON THE ADJOINT SOURCES
     nfrange = i_fend -i_fstart
     w_taper(:) = 0.
-    do i = i_fstart, i_fend
-    ! boxcar 
-    ! if(window_type ==1) w_taper(i) = 1. ! boxcar window
-    ! welch 
-    ! if(window_type ==2) w_taper(i) = 1. - (2.0/nw)**2 * ((i-1) - nw/2.0)**2
-    ! cosine
-    if(window_type ==3) w_taper(i) = &
-        1. - cos(PI*(i-i_fstart)/(nfrange))**ipwr_w
-    enddo
-
+    nflen=nfrange+1
+    allocate(tas(nflen))
+    call window_taper(nflen,taper_percentage,taper_type,tas)
+    w_taper(i_fstart:i_fend)=tas(1:nflen)
+    deallocate(tas)
+ 
     ! compute normalization factor for w_taper
     ! note: 2 is needed for the integration from -inf to inf
     ffac = 2.0 * df * sum(w_taper(i_fstart:i_fend) )
@@ -604,17 +585,16 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
         enddo
         close(1)
     endif
+    !! misfit
+    misfit_p=0.5*sum(ddtau_w(i_fstart:i_fend)**2*wp_taper(i_fstart:i_fend)*df)
+    misfit_q=0.5*sum(ddlnA_w(i_fstart:i_fend)**2*wq_taper(i_fstart:i_fend)*df)
 
+    if(compute_adjoint) then 
     ! allocate MT variables
     allocate(s1_dtw_ho_all(NPT,ntaper))
     allocate(s1_vtw_ho_all(NPT,ntaper))
     allocate(s2_dtw_ho_all(NPT,ntaper))
     allocate(s2_vtw_ho_all(NPT,ntaper))
-
-
-    ! calculate the tapers
-    allocate(tas(NPT,ntaper))
-    call staper(nlen, NW, ntaper, tas, NPT, ey1, ey2)
 
     !! constant terms for adj 
     Mtr1_mtm = 0.
@@ -626,8 +606,8 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
     do ictaper = 1,ntaper
 
     ! tapered synthetic displacement
-    s1_dtw_h(1:nlen) = s1(1:nlen) * real(tas(1:nlen,ictaper),CUSTOM_REAL)
-    s2_dtw_h(1:nlen) = s2(1:nlen) * real(tas(1:nlen,ictaper),CUSTOM_REAL)
+    s1_dtw_h(1:nlen) = s1(1:nlen) * real(tapers(1:nlen,ictaper),CUSTOM_REAL)
+    s2_dtw_h(1:nlen) = s2(1:nlen) * real(tapers(1:nlen,ictaper),CUSTOM_REAL)
 
     ! compute velocity of tapered syn
     call compute_vel(s1_dtw_h,npts,deltat,nlen,s1_vtw_h)
@@ -736,20 +716,20 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
 
     ! create adjoint source
     ! applies taper to time signal
-    fp1(1:nlen) = fp1(1:nlen) + real(tas(1:nlen,ictaper) * &
+    fp1(1:nlen) = fp1(1:nlen) + real(tapers(1:nlen,ictaper) * &
         fp1_adj_t(1:nlen),CUSTOM_REAL)
-    fp2(1:nlen) = fp2(1:nlen) + real(tas(1:nlen,ictaper) * &
+    fp2(1:nlen) = fp2(1:nlen) + real(tapers(1:nlen,ictaper) * &
         fp2_adj_t(1:nlen),CUSTOM_REAL)
-    fq1(1:nlen) = fq1(1:nlen) + real(tas(1:nlen,ictaper) * &
+    fq1(1:nlen) = fq1(1:nlen) + real(tapers(1:nlen,ictaper) * &
         fq1_adj_t(1:nlen),CUSTOM_REAL)
-    fq2(1:nlen) = fq2(1:nlen) + real(tas(1:nlen,ictaper) * &
+    fq2(1:nlen) = fq2(1:nlen) + real(tapers(1:nlen,ictaper) * &
         fq2_adj_t(1:nlen),CUSTOM_REAL)
     enddo  ! ictaper
-    deallocate(tas)
     deallocate(s1_dtw_ho_all)
     deallocate(s1_vtw_ho_all)
     deallocate(s2_dtw_ho_all)
     deallocate(s2_vtw_ho_all)
+endif ! compute_adjoint 
 
 end subroutine mtm_DD_adj
 

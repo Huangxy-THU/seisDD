@@ -215,7 +215,7 @@ subroutine WD_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
         deallocate(tas)
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_WD',status='unknown')
+            open(1,file=trim(output_dir)//'/adj_WD_win',status='unknown')
             do  i =  i_tstart,i_tend
             write(1,'(I5,e15.5)') i,adj(i)
             enddo
@@ -325,7 +325,7 @@ subroutine CC_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
         deallocate(tas)
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_CC',status='unknown')
+            open(1,file=trim(output_dir)//'/adj_CC_win',status='unknown')
             do  i =  i_tstart,i_tend
             write(1,'(I5,e15.5)') i,adj(i)
             enddo
@@ -479,7 +479,7 @@ subroutine ET_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
         deallocate(tas)
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_ET',status='unknown')
+            open(1,file=trim(output_dir)//'/adj_ET_win',status='unknown')
             do  i = i_tstart,i_tend
             write(1,'(I5,e15.5)') i,adj(i)
             enddo
@@ -619,7 +619,7 @@ subroutine ED_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
         deallocate(tas)
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_ED',status='unknown')
+            open(1,file=trim(output_dir)//'/adj_ED_win',status='unknown')
             do  i = i_tstart,i_tend
             write(1,'(I5,e15.5)') i,adj(i)
             enddo
@@ -762,7 +762,7 @@ subroutine IP_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
         deallocate(tas)
 
         if(DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_IP',status='unknown')
+            open(1,file=trim(output_dir)//'/adj_IP_win',status='unknown')
             do  i = i_tstart,i_tend
             write(1,'(I5,3e15.5)') i,d(i),s(i),adj(i)
             enddo
@@ -969,7 +969,7 @@ subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
         deallocate(tas)
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_MT',status='unknown')
+            open(1,file=trim(output_dir)//'/adj_MT_win',status='unknown')
             do  i =  i_tstart,i_tend
             write(1,'(I5,e15.5)') i,adj(i)
             enddo
@@ -1149,8 +1149,8 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2_tw(1:nlen2)
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_win',status='unknown')
-            open(2,file=trim(output_dir)//'/adj_ref_win',status='unknown')
+            open(1,file=trim(output_dir)//'/adj1_CC_win',status='unknown')
+            open(2,file=trim(output_dir)//'/adj2_CC_win',status='unknown')
             do  i =  i_tstart1,i_tend1
             write(1,*) i,adj1(i)
             enddo
@@ -1268,6 +1268,19 @@ subroutine WD_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         ! reverse window and taper again 
         adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1_tw(1:nlen1)
         adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2_tw(1:nlen2)
+
+        if( DISPLAY_DETAILS) then
+            open(1,file=trim(output_dir)//'/adj1_WD_win',status='unknown')
+            open(2,file=trim(output_dir)//'/adj2_WD_win',status='unknown')
+            do  i =  i_tstart1,i_tend1
+            write(1,*) i,adj1(i)
+            enddo
+            do  i =  i_tstart2,i_tend2
+            write(2,*) i,adj2(i)
+            enddo
+            close(1)
+            close(2)
+        endif
 
     endif
     deallocate(tas1,tas2)
@@ -1442,6 +1455,19 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1_tw(1:nlen1)
         adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2_tw(1:nlen2)
 
+        if( DISPLAY_DETAILS) then
+            open(1,file=trim(output_dir)//'/adj1_IP_win',status='unknown')
+            open(2,file=trim(output_dir)//'/adj2_IP_win',status='unknown')
+            do  i =  i_tstart1,i_tend1
+            write(1,*) i,adj1(i)
+            enddo
+            do  i =  i_tstart2,i_tend2
+            write(2,*) i,adj2(i)
+            enddo
+            close(1)
+            close(2)
+        endif
+
     endif
     deallocate(tas1,tas2)
 
@@ -1503,7 +1529,8 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     real(kind=CUSTOM_REAL), dimension(NPT) :: err_dlnA_mt_obs, err_dlnA_mt_syn
     complex*16, dimension(NPT) :: trans_func_obs,trans_func_syn
 
-    ! adjoint
+    ! misfit & adjoint
+    real(kind=CUSTOM_REAL) :: misfit_p, misfit_q
     real(kind=CUSTOM_REAL), dimension(npts) :: fp1_tw,fp2_tw,fq1_tw,fq2_tw
 
     !! window
@@ -1613,9 +1640,9 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
         print*,  'NPT/df/dw/df_new :', NPT,df,dw,df_new  
         print*
         print*, 'find the spectral boundaries for reliable measurement'
-        print*, 'min, max frequency limit for 1 : ', fvec(i_fstart1),fvec(i_fend1)
-        print*, 'min, max frequency limit for 2 : ', fvec(i_fstart2),fvec(i_fend2)
-        print*, 'effective bandwidth (Hz) : ',fvec(i_fstart),fvec(i_fend),fvec(i_fend)-fvec(i_fstart)
+        print*, 'min, max frequency limit for 1 : ',i_fstart1,i_fend1,fvec(i_fstart1),fvec(i_fend1)
+        print*, 'min, max frequency limit for 2 : ',i_fstart2,i_fend2,fvec(i_fstart2),fvec(i_fend2)
+        print*, 'effective bandwidth (Hz) : ',i_fstart,i_fend,fvec(i_fend)-fvec(i_fstart)
         print*, 'half time-bandwidth product : ', NW
         print*, 'number of tapers : ',ntaper
         print*, 'resolution of multitaper (Hz) : ', NW/(nlen*deltat)
@@ -1626,7 +1653,6 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     ! calculate the tapers
     allocate(tapers(NPT,ntaper))
     call staper(nlen, dble(NW), ntaper, tapers, NPT, ey1, ey2)
-    print*, nlen, dble(NW), ntaper
 
     if( DISPLAY_DETAILS) then
         do ictaper=1,ntaper
@@ -1650,6 +1676,14 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     ! double-difference measurement 
     ddtau_w = dtau_w_syn-dtau_w_obs
     ddlnA_w = dlnA_w_syn-dlnA_w_obs
+
+    ! misfit & adj
+    call mtm_DD_adj(s1_tw,s2_tw_cc,NPTS,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,&
+        err_dt_cc_obs,err_dt_cc_syn,err_dlnA_cc_obs,err_dlnA_cc_syn, &
+        err_dtau_mt_obs,err_dtau_mt_syn,err_dlnA_mt_obs,err_dlnA_mt_syn, &
+        compute_adjoint,&        
+        fp1_tw,fp2_tw,fq1_tw,fq2_tw,misfit_p,misfit_q)
+
     ! MT misfit
     !misfit_output = sqrt(sum((ddtau_w(i_fstart:i_fend))**2*dw)) * cc_max_obs
     if(misfit_type=='MT') then
@@ -1657,13 +1691,13 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
         do i=i_fstart,i_fend
         write(IOUT,*) ddtau_w(i)*sqrt(dw)
         enddo
-        misfit=0.5*sum(ddtau_w(i_fstart:i_fend)**2*dw)
+        misfit=misfit_p
     elseif(misfit_type=='MA') then
         ! MA misfit
         do i=i_fstart,i_fend
         write(IOUT,*) ddlnA_w(i)*sqrt(dw)
         enddo
-        misfit=0.5*sum(ddlnA_w(i_fstart:i_fend)**2*dw)
+        misfit=misfit_q
     endif
     num=i_fend-i_fstart+1
 
@@ -1695,11 +1729,6 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
         adj1(1:npts) = 0.0
         adj2(1:npts) = 0.0
 
-        call mtm_DD_adj(s1_tw,s2_tw_cc,NPTS,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,&
-            err_dt_cc_obs,err_dt_cc_syn,err_dlnA_cc_obs,err_dlnA_cc_syn, &
-            err_dtau_mt_obs,err_dtau_mt_syn,err_dlnA_mt_obs,err_dlnA_mt_syn, &
-            !ntaper,NW,&
-        fp1_tw,fp2_tw,fq1_tw,fq2_tw)
         ! adjoint source
         fp1_tw(1:nlen)= fp1_tw(1:nlen) * cc_max_obs *cc_max_obs
         fp2_tw(1:nlen)= fp2_tw(1:nlen) * cc_max_obs *cc_max_obs
@@ -1727,8 +1756,8 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
         endif
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_win',status='unknown')
-            open(2,file=trim(output_dir)//'/adj_ref_win',status='unknown')
+            open(1,file=trim(output_dir)//'/adj1_MT_win',status='unknown')
+            open(2,file=trim(output_dir)//'/adj2_MT_win',status='unknown')
             do  i =  i_tstart1,i_tend1
             write(1,*) i,adj1(i)
             enddo
