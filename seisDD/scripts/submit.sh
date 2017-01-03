@@ -83,7 +83,7 @@ if [ "${job,,}" != "${var1,,}"  ]; then
     ./renew_parameter.sh
 
     echo 
-    read -p "Do you wish to comiple lib codes (y/n)?" yn
+    read -p "Do you wish to compile lib codes (y/n)?" yn
     if [ $yn == 'y' ]; then 
         rm -rf *.mod make_*
         cp $package_path/lib/make_lib ./make_lib
@@ -97,7 +97,7 @@ if [ "${job,,}" != "${var1,,}"  ]; then
     fi
 
     echo 
-    read -p "Do you wish to comiple source codes (y/n)?" yn
+    read -p "Do you wish to compile source codes (y/n)?" yn
     if [ $yn == 'y' ]; then
         cp $package_path/make/make_file ./make_file
         FILE="make_file"
