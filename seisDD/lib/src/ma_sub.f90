@@ -1,4 +1,4 @@
-!! main subroutines for mt measurement 
+!! subroutines 
 !! created by Yanhua O. Yuan ( yanhuay@princeton.edu)
 
 ! =================================================================================================
@@ -115,9 +115,9 @@ subroutine mt_measure(dat1,dat2,npts,deltat,nlen,tshift_cc,dlnA_cc, i_fstart,i_f
 
     ! calculate MT transfer function using water level
     do i =  i_fstart,i_fend
-          if(abs(bot_mtm(i)) > abs(wtr_mtm_use)) trans_func(i) = cmplx(top_mtm(i) / bot_mtm(i))
-          if(abs(bot_mtm(i)) < abs(wtr_mtm_use)) trans_func(i) = cmplx(top_mtm(i) / (bot_mtm(i)+wtr_mtm_use))
-          !trans_func(i) = cmplx(top_mtm(i) / (bot_mtm(i)+wtr_mtm_use))
+    if(abs(bot_mtm(i)) > abs(wtr_mtm_use)) trans_func(i) = cmplx(top_mtm(i) / bot_mtm(i))
+    if(abs(bot_mtm(i)) < abs(wtr_mtm_use)) trans_func(i) = cmplx(top_mtm(i) / (bot_mtm(i)+wtr_mtm_use))
+    !trans_func(i) = cmplx(top_mtm(i) / (bot_mtm(i)+wtr_mtm_use))
     enddo
 
     if(DISPLAY_DETAILS) then
@@ -380,97 +380,97 @@ subroutine mtm_adj(syn,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
     misfit_q=0.5*sum(dlnA_w(i_fstart:i_fend)**2*wq_taper(i_fstart:i_fend)*df)
 
     if(compute_adjoint) then
-    ! allocate MT variables
-    allocate(syn_dtw_ho_all(NPT,ntaper))
-    allocate(syn_vtw_ho_all(NPT,ntaper))
+        ! allocate MT variables
+        allocate(syn_dtw_ho_all(NPT,ntaper))
+        allocate(syn_vtw_ho_all(NPT,ntaper))
 
-    p_bot_mtm = 0.
-    q_bot_mtm = 0.
+        p_bot_mtm = 0.
+        q_bot_mtm = 0.
 
-    do ictaper = 1,ntaper
+        do ictaper = 1,ntaper
 
-    ! tapered synthetic displacement
-    syn_dtw_h(1:nlen) = syn(1:nlen) * real(tapers(1:nlen,ictaper),CUSTOM_REAL)
+        ! tapered synthetic displacement
+        syn_dtw_h(1:nlen) = syn(1:nlen) * real(tapers(1:nlen,ictaper),CUSTOM_REAL)
 
-    ! compute velocity of tapered syn
-    call compute_vel(syn_dtw_h,npts,deltat,nlen,syn_vtw_h)
+        ! compute velocity of tapered syn
+        call compute_vel(syn_dtw_h,npts,deltat,nlen,syn_vtw_h)
 
-    ! single-tapered complex synthetic displacement and velocity
-    syn_dtw_ho_all(:,ictaper) = 0.
-    syn_vtw_ho_all(:,ictaper) = 0.
-    syn_dtw_ho_all(1:nlen,ictaper) = dcmplx(syn_dtw_h(1:nlen),0.)
-    syn_vtw_ho_all(1:nlen,ictaper) = dcmplx(syn_vtw_h(1:nlen),0.)
+        ! single-tapered complex synthetic displacement and velocity
+        syn_dtw_ho_all(:,ictaper) = 0.
+        syn_vtw_ho_all(:,ictaper) = 0.
+        syn_dtw_ho_all(1:nlen,ictaper) = dcmplx(syn_dtw_h(1:nlen),0.)
+        syn_vtw_ho_all(1:nlen,ictaper) = dcmplx(syn_vtw_h(1:nlen),0.)
 
-    ! apply FFT get complex spectra
-    call fft(LNPT,syn_dtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
-    call fft(LNPT,syn_vtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
+        ! apply FFT get complex spectra
+        call fft(LNPT,syn_dtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
+        call fft(LNPT,syn_vtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
 
-    p_bot_mtm(:) = p_bot_mtm(:) + syn_vtw_ho_all(:,ictaper) &
-        * conjg(syn_vtw_ho_all(:,ictaper))
-    q_bot_mtm(:) = q_bot_mtm(:) + syn_dtw_ho_all(:,ictaper) &
-        * conjg(syn_dtw_ho_all(:,ictaper))
+        p_bot_mtm(:) = p_bot_mtm(:) + syn_vtw_ho_all(:,ictaper) &
+            * conjg(syn_vtw_ho_all(:,ictaper))
+        q_bot_mtm(:) = q_bot_mtm(:) + syn_dtw_ho_all(:,ictaper) &
+            * conjg(syn_dtw_ho_all(:,ictaper))
 
-    enddo ! ictaper
+        enddo ! ictaper
 
-    if( DISPLAY_DETAILS) then
-        open(2,file=trim(output_dir)//'/adj_bot_pq',status='unknown')
-        do  i = i_fstart,i_fend 
-        write(2,*) i,abs(p_bot_mtm(i)), abs(q_bot_mtm(i))
+        if( DISPLAY_DETAILS) then
+            open(2,file=trim(output_dir)//'/adj_bot_pq',status='unknown')
+            do  i = i_fstart,i_fend 
+            write(2,*) i,abs(p_bot_mtm(i)), abs(q_bot_mtm(i))
+            enddo
+            close(2)
+        endif
+
+        ampmax = maxval(abs(p_bot_mtm))
+        !    wtr_use = ampmax * wtr_mtm**2
+        wtr_use = ampmax * 0.01
+
+        ! compute p_j, q_j, P_j, Q_j and adjoint source fp, fq
+        fp(1:npts) = 0.
+        fq(1:npts) = 0.
+        do ictaper = 1,ntaper
+        fp_adj=0.0
+        fq_adj=0.0
+        ! compute p_j(w) and q_j(w)
+        pwc_adj(:) = cmplx(0.,0.)
+        qwc_adj(:) = cmplx(0.,0.)
+
+        do i = i_fstart,i_fend
+        ! if(abs(p_bot_mtm(i)) > abs(wtr_use)) pwc_adj(i) = &
+        !        syn_vtw_ho_all(i,ictaper) / p_bot_mtm(i)
+        ! if(abs(p_bot_mtm(i)) > abs(wtr_use)) pwc_adj(i) = &
+        !        syn_vtw_ho_all(i,ictaper) / (p_bot_mtm(i) + wtr_use)
+        pwc_adj(i) =  syn_vtw_ho_all(i,ictaper) / p_bot_mtm(i)
+        qwc_adj(i) = -syn_dtw_ho_all(i,ictaper) / q_bot_mtm(i)
         enddo
-        close(2)
-    endif
 
-    ampmax = maxval(abs(p_bot_mtm))
-    !    wtr_use = ampmax * wtr_mtm**2
-    wtr_use = ampmax * 0.01
+        ! compute P_j(w) and Q_j(w)
+        ! NOTE: the MT measurement is incorporated here
+        !             also note that wp_taper and wq_taper can contain
+        !             uncertainty estimations
+        ! adds misfit measurement dtau, dlnA
+        pwc_adj(i_fstart: i_fend) = pwc_adj(i_fstart: i_fend) &
+            * dcmplx(dtau_w(i_fstart: i_fend),0.) &
+            * dcmplx(wp_taper(i_fstart: i_fend),0.)
+        qwc_adj(i_fstart: i_fend) = qwc_adj(i_fstart: i_fend) &
+            * dcmplx(dlnA_w(i_fstart: i_fend),0.) &
+            * dcmplx(wq_taper(i_fstart: i_fend),0.)
 
-    ! compute p_j, q_j, P_j, Q_j and adjoint source fp, fq
-    fp(1:npts) = 0.
-    fq(1:npts) = 0.
-    do ictaper = 1,ntaper
-    fp_adj=0.0
-    fq_adj=0.0
-    ! compute p_j(w) and q_j(w)
-    pwc_adj(:) = cmplx(0.,0.)
-    qwc_adj(:) = cmplx(0.,0.)
+        ! IFFT into the time domain
+        call fftinv(LNPT,pwc_adj,dble(REVERSE_FFT),dble(deltat),dtau_pj_t)
+        call fftinv(LNPT,qwc_adj,dble(REVERSE_FFT),dble(deltat),dlnA_qj_t)
 
-    do i = i_fstart,i_fend
-    ! if(abs(p_bot_mtm(i)) > abs(wtr_use)) pwc_adj(i) = &
-    !        syn_vtw_ho_all(i,ictaper) / p_bot_mtm(i)
-    ! if(abs(p_bot_mtm(i)) > abs(wtr_use)) pwc_adj(i) = &
-    !        syn_vtw_ho_all(i,ictaper) / (p_bot_mtm(i) + wtr_use)
-    pwc_adj(i) =  syn_vtw_ho_all(i,ictaper) / p_bot_mtm(i)
-    qwc_adj(i) = -syn_dtw_ho_all(i,ictaper) / q_bot_mtm(i)
-    enddo
+        ! create adjoint source
+        fp_adj(1:nlen)=real(tapers(1:nlen,ictaper) * dtau_pj_t(1:nlen),CUSTOM_REAL)
+        fq_adj(1:nlen)=real(tapers(1:nlen,ictaper) * dlnA_qj_t(1:nlen),CUSTOM_REAL)
+        ! applies taper to time signal
+        fp(1:nlen) = fp(1:nlen) + fp_adj(1:nlen)
+        fq(1:nlen) = fq(1:nlen) + fq_adj(1:nlen)
 
- ! compute P_j(w) and Q_j(w)
-    ! NOTE: the MT measurement is incorporated here
-    !             also note that wp_taper and wq_taper can contain
-    !             uncertainty estimations
-    ! adds misfit measurement dtau, dlnA
-    pwc_adj(i_fstart: i_fend) = pwc_adj(i_fstart: i_fend) &
-        * dcmplx(dtau_w(i_fstart: i_fend),0.) &
-        * dcmplx(wp_taper(i_fstart: i_fend),0.)
-    qwc_adj(i_fstart: i_fend) = qwc_adj(i_fstart: i_fend) &
-        * dcmplx(dlnA_w(i_fstart: i_fend),0.) &
-        * dcmplx(wq_taper(i_fstart: i_fend),0.)
+        enddo  ! ictaper
 
-    ! IFFT into the time domain
-    call fftinv(LNPT,pwc_adj,dble(REVERSE_FFT),dble(deltat),dtau_pj_t)
-    call fftinv(LNPT,qwc_adj,dble(REVERSE_FFT),dble(deltat),dlnA_qj_t)
-
-    ! create adjoint source
-    fp_adj(1:nlen)=real(tapers(1:nlen,ictaper) * dtau_pj_t(1:nlen),CUSTOM_REAL)
-    fq_adj(1:nlen)=real(tapers(1:nlen,ictaper) * dlnA_qj_t(1:nlen),CUSTOM_REAL)
-    ! applies taper to time signal
-    fp(1:nlen) = fp(1:nlen) + fp_adj(1:nlen)
-    fq(1:nlen) = fq(1:nlen) + fq_adj(1:nlen)
-    
-    enddo  ! ictaper
-
-    deallocate(syn_dtw_ho_all)
-    deallocate(syn_vtw_ho_all)
-endif ! compute_adjoint
+        deallocate(syn_dtw_ho_all)
+        deallocate(syn_vtw_ho_all)
+    endif ! compute_adjoint
 
 end subroutine mtm_adj
 ! ------------------------------------------------------------------------------------
@@ -524,7 +524,7 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
     call window_taper(nflen,taper_percentage,taper_type,tas)
     w_taper(i_fstart:i_fend)=tas(1:nflen)
     deallocate(tas)
- 
+
     ! compute normalization factor for w_taper
     ! note: 2 is needed for the integration from -inf to inf
     ffac = 2.0 * df * sum(w_taper(i_fstart:i_fend) )
@@ -578,153 +578,150 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
     misfit_q=0.5*sum(ddlnA_w(i_fstart:i_fend)**2*wq_taper(i_fstart:i_fend)*df)
 
     if(compute_adjoint) then 
-    ! allocate MT variables
-    allocate(s1_dtw_ho_all(NPT,ntaper))
-    allocate(s1_vtw_ho_all(NPT,ntaper))
-    allocate(s2_dtw_ho_all(NPT,ntaper))
-    allocate(s2_vtw_ho_all(NPT,ntaper))
+        ! allocate MT variables
+        allocate(s1_dtw_ho_all(NPT,ntaper))
+        allocate(s1_vtw_ho_all(NPT,ntaper))
+        allocate(s2_dtw_ho_all(NPT,ntaper))
+        allocate(s2_vtw_ho_all(NPT,ntaper))
 
-    !! constant terms for adj 
-    Mtr1_mtm = 0.
-    Mtr2_mtm = 0.
-    Mtr3_mtm = 0.
-    Mtr4_mtm = 0.
-    Mtr5_mtm = 0.
+        !! constant terms for adj 
+        Mtr1_mtm = 0.
+        Mtr2_mtm = 0.
+        Mtr3_mtm = 0.
+        Mtr4_mtm = 0.
+        Mtr5_mtm = 0.
 
-    do ictaper = 1,ntaper
+        do ictaper = 1,ntaper
 
-    ! tapered synthetic displacement
-    s1_dtw_h(1:nlen) = s1(1:nlen) * real(tapers(1:nlen,ictaper),CUSTOM_REAL)
-    s2_dtw_h(1:nlen) = s2(1:nlen) * real(tapers(1:nlen,ictaper),CUSTOM_REAL)
+        ! tapered synthetic displacement
+        s1_dtw_h(1:nlen) = s1(1:nlen) * real(tapers(1:nlen,ictaper),CUSTOM_REAL)
+        s2_dtw_h(1:nlen) = s2(1:nlen) * real(tapers(1:nlen,ictaper),CUSTOM_REAL)
 
-    ! compute velocity of tapered syn
-    call compute_vel(s1_dtw_h,npts,deltat,nlen,s1_vtw_h)
-    call compute_vel(s2_dtw_h,npts,deltat,nlen,s2_vtw_h)
-
-
-    ! single-tapered complex synthetic displacement and velocity
-    s1_dtw_ho_all(:,ictaper) = 0.
-    s1_vtw_ho_all(:,ictaper) = 0.
-    s2_dtw_ho_all(:,ictaper) = 0.
-    s2_vtw_ho_all(:,ictaper) = 0.
-    s1_dtw_ho_all(1:nlen,ictaper) = dcmplx(s1_dtw_h(1:nlen),0.)
-    s1_vtw_ho_all(1:nlen,ictaper) = dcmplx(s1_vtw_h(1:nlen),0.)
-    s2_dtw_ho_all(1:nlen,ictaper) = dcmplx(s2_dtw_h(1:nlen),0.)
-    s2_vtw_ho_all(1:nlen,ictaper) = dcmplx(s2_vtw_h(1:nlen),0.)
-
-    ! apply FFT get complex spectra
-    call fft(LNPT,s1_dtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
-    call fft(LNPT,s1_vtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
-    call fft(LNPT,s2_dtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
-    call fft(LNPT,s2_vtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
-
-    Mtr1_mtm(:) = Mtr1_mtm(:) + s1_vtw_ho_all(:,ictaper) &
-        * conjg(s2_vtw_ho_all(:,ictaper))
-    Mtr2_mtm(:) = Mtr2_mtm(:) + s2_vtw_ho_all(:,ictaper) &
-        * conjg(s1_vtw_ho_all(:,ictaper))
-
-    Mtr3_mtm(:) = Mtr3_mtm(:) + s1_dtw_ho_all(:,ictaper) &
-        * conjg(s2_dtw_ho_all(:,ictaper))
-    Mtr4_mtm(:) = Mtr4_mtm(:) + s2_dtw_ho_all(:,ictaper) &
-        * conjg(s1_dtw_ho_all(:,ictaper))
-    Mtr5_mtm(:) = Mtr5_mtm(:) + s2_dtw_ho_all(:,ictaper) &
-        * conjg(s2_dtw_ho_all(:,ictaper))
-    enddo ! ictaper
+        ! compute velocity of tapered syn
+        call compute_vel(s1_dtw_h,npts,deltat,nlen,s1_vtw_h)
+        call compute_vel(s2_dtw_h,npts,deltat,nlen,s2_vtw_h)
 
 
-    ! compute p_j, q_j, P_j, Q_j and adjoint source fp, fq
-    fp1(1:npts) = 0.
-    fq1(1:npts) = 0.
-    fp2(1:npts) = 0.
-    fq2(1:npts) = 0.
+        ! single-tapered complex synthetic displacement and velocity
+        s1_dtw_ho_all(:,ictaper) = 0.
+        s1_vtw_ho_all(:,ictaper) = 0.
+        s2_dtw_ho_all(:,ictaper) = 0.
+        s2_vtw_ho_all(:,ictaper) = 0.
+        s1_dtw_ho_all(1:nlen,ictaper) = dcmplx(s1_dtw_h(1:nlen),0.)
+        s1_vtw_ho_all(1:nlen,ictaper) = dcmplx(s1_vtw_h(1:nlen),0.)
+        s2_dtw_ho_all(1:nlen,ictaper) = dcmplx(s2_dtw_h(1:nlen),0.)
+        s2_vtw_ho_all(1:nlen,ictaper) = dcmplx(s2_vtw_h(1:nlen),0.)
 
-    do ictaper = 1,ntaper
+        ! apply FFT get complex spectra
+        call fft(LNPT,s1_dtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
+        call fft(LNPT,s1_vtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
+        call fft(LNPT,s2_dtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
+        call fft(LNPT,s2_vtw_ho_all(:,ictaper),dble(FORWARD_FFT),dble(deltat))
 
-    ! compute p_j(w) and q_j(w)
-    p1_adj(:) = cmplx(0.,0.)
-    pw1_adj(:) = cmplx(0.,0.)
-    p2_adj(:) = cmplx(0.,0.)
-    pw2_adj(:) = cmplx(0.,0.)
-    q1_adj(:) = cmplx(0.,0.)
-    qw1_adj(:) = cmplx(0.,0.)
-    q2_adj(:) = cmplx(0.,0.)
-    qw2_adj(:) = cmplx(0.,0.)
+        Mtr1_mtm(:) = Mtr1_mtm(:) + s1_vtw_ho_all(:,ictaper) &
+            * conjg(s2_vtw_ho_all(:,ictaper))
+        Mtr2_mtm(:) = Mtr2_mtm(:) + s2_vtw_ho_all(:,ictaper) &
+            * conjg(s1_vtw_ho_all(:,ictaper))
 
-    fp1_adj(:) = cmplx(0.,0.)
-    fp2_adj(:) = cmplx(0.,0.)
-    fq1_adj(:) = cmplx(0.,0.)
-    fq2_adj(:) = cmplx(0.,0.)
-
-    do i = i_fstart,i_fend
-    !p1_adj(i)  =  -0.5* conjg(s2_vtw_ho_all(i,ictaper)) / Mtr1_mtm(i)
-    pw1_adj(i) = - 0.5 * s2_vtw_ho_all(i,ictaper) / Mtr2_mtm(i)
-
-    !p2_adj(i)  =  0.5 * conjg(s1_vtw_ho_all(i,ictaper)) / Mtr2_mtm(i)
-    pw2_adj(i) =  0.5 * s1_vtw_ho_all(i,ictaper) / Mtr1_mtm(i)
-
-    q1_adj(i)  =  0.5 * conjg(s2_dtw_ho_all(i,ictaper)) / Mtr3_mtm(i)
-    !   qw1_adj(i) =  0.5 * s2_dtw_ho_all(i,ictaper) / Mtr4_mtm(i)
-    ! 
-    q2_adj(i)  =  0.5 * conjg(s1_dtw_ho_all(i,ictaper)) / Mtr4_mtm(i) &
-        - conjg(s2_dtw_ho_all(i,ictaper)) / Mtr5_mtm(i)
-    !   qw2_adj(i) =  0.5 * s1_dtw_ho_all(i,ictaper) / Mtr3_mtm(i) &
-    !                 - s2_dtw_ho_all(i,ictaper) / Mtr5_mtm(i)
-    enddo
-
-    ! compute P_j(w) and Q_j(w)
-    ! NOTE: the MT measurement is incorporated here
-    !             also note that wp_taper and wq_taper can contain
-    !             uncertainty estimations
-    ! adds misfit measurement dtau, dlnA
-    fp1_adj(i_fstart: i_fend) &
-        ! = (conjg(p1_adj(i_fstart: i_fend)) +
-    =  2.0*(pw1_adj(i_fstart:i_fend)) &
-        * dcmplx(ddtau_w(i_fstart: i_fend),0.) &
-        * dcmplx(wp_taper(i_fstart: i_fend),0.)
-    fp2_adj(i_fstart: i_fend) &
-        ! = (conjg(p2_adj(i_fstart: i_fend)) +
-    = 2.0*(pw2_adj(i_fstart: i_fend)) &
-        * dcmplx(ddtau_w(i_fstart: i_fend),0.) &
-        * dcmplx(wp_taper(i_fstart: i_fend),0.)
-    fq1_adj(i_fstart: i_fend) &
-        = (q1_adj(i_fstart: i_fend) + conjg(q1_adj(i_fstart: i_fend)))&
-        * dcmplx(ddlnA_w(i_fstart: i_fend),0.) &
-        * dcmplx(wq_taper(i_fstart: i_fend),0.)
-    fq2_adj(i_fstart: i_fend) &
-        = (q2_adj(i_fstart: i_fend) + conjg(q2_adj(i_fstart: i_fend)))&
-        * dcmplx(ddlnA_w(i_fstart: i_fend),0.) &
-        * dcmplx(wq_taper(i_fstart: i_fend),0.)
+        Mtr3_mtm(:) = Mtr3_mtm(:) + s1_dtw_ho_all(:,ictaper) &
+            * conjg(s2_dtw_ho_all(:,ictaper))
+        Mtr4_mtm(:) = Mtr4_mtm(:) + s2_dtw_ho_all(:,ictaper) &
+            * conjg(s1_dtw_ho_all(:,ictaper))
+        Mtr5_mtm(:) = Mtr5_mtm(:) + s2_dtw_ho_all(:,ictaper) &
+            * conjg(s2_dtw_ho_all(:,ictaper))
+        enddo ! ictaper
 
 
-    ! IFFT into the time domain
-    call fftinv(LNPT,fp1_adj,dble(REVERSE_FFT),dble(deltat),fp1_adj_t)
-    call fftinv(LNPT,fp2_adj,dble(REVERSE_FFT),dble(deltat),fp2_adj_t)
-    call fftinv(LNPT,fq1_adj,dble(REVERSE_FFT),dble(deltat),fq1_adj_t)
-    call fftinv(LNPT,fq2_adj,dble(REVERSE_FFT),dble(deltat),fq2_adj_t)
+        ! compute p_j, q_j, P_j, Q_j and adjoint source fp, fq
+        fp1(1:npts) = 0.
+        fq1(1:npts) = 0.
+        fp2(1:npts) = 0.
+        fq2(1:npts) = 0.
 
-    ! create adjoint source
-    ! applies taper to time signal
-    fp1(1:nlen) = fp1(1:nlen) + real(tapers(1:nlen,ictaper) * &
-        fp1_adj_t(1:nlen),CUSTOM_REAL)
-    fp2(1:nlen) = fp2(1:nlen) + real(tapers(1:nlen,ictaper) * &
-        fp2_adj_t(1:nlen),CUSTOM_REAL)
-    fq1(1:nlen) = fq1(1:nlen) + real(tapers(1:nlen,ictaper) * &
-        fq1_adj_t(1:nlen),CUSTOM_REAL)
-    fq2(1:nlen) = fq2(1:nlen) + real(tapers(1:nlen,ictaper) * &
-        fq2_adj_t(1:nlen),CUSTOM_REAL)
-    enddo  ! ictaper
-    deallocate(s1_dtw_ho_all)
-    deallocate(s1_vtw_ho_all)
-    deallocate(s2_dtw_ho_all)
-    deallocate(s2_vtw_ho_all)
-endif ! compute_adjoint 
+        do ictaper = 1,ntaper
+
+        ! compute p_j(w) and q_j(w)
+        p1_adj(:) = cmplx(0.,0.)
+        pw1_adj(:) = cmplx(0.,0.)
+        p2_adj(:) = cmplx(0.,0.)
+        pw2_adj(:) = cmplx(0.,0.)
+        q1_adj(:) = cmplx(0.,0.)
+        qw1_adj(:) = cmplx(0.,0.)
+        q2_adj(:) = cmplx(0.,0.)
+        qw2_adj(:) = cmplx(0.,0.)
+
+        fp1_adj(:) = cmplx(0.,0.)
+        fp2_adj(:) = cmplx(0.,0.)
+        fq1_adj(:) = cmplx(0.,0.)
+        fq2_adj(:) = cmplx(0.,0.)
+
+        do i = i_fstart,i_fend
+        !p1_adj(i)  =  -0.5* conjg(s2_vtw_ho_all(i,ictaper)) / Mtr1_mtm(i)
+        pw1_adj(i) = - 0.5 * s2_vtw_ho_all(i,ictaper) / Mtr2_mtm(i)
+
+        !p2_adj(i)  =  0.5 * conjg(s1_vtw_ho_all(i,ictaper)) / Mtr2_mtm(i)
+        pw2_adj(i) =  0.5 * s1_vtw_ho_all(i,ictaper) / Mtr1_mtm(i)
+
+        q1_adj(i)  =  0.5 * conjg(s2_dtw_ho_all(i,ictaper)) / Mtr3_mtm(i)
+        !   qw1_adj(i) =  0.5 * s2_dtw_ho_all(i,ictaper) / Mtr4_mtm(i)
+        ! 
+        q2_adj(i)  =  0.5 * conjg(s1_dtw_ho_all(i,ictaper)) / Mtr4_mtm(i) &
+            - conjg(s2_dtw_ho_all(i,ictaper)) / Mtr5_mtm(i)
+        !   qw2_adj(i) =  0.5 * s1_dtw_ho_all(i,ictaper) / Mtr3_mtm(i) &
+        !                 - s2_dtw_ho_all(i,ictaper) / Mtr5_mtm(i)
+        enddo
+
+        ! compute P_j(w) and Q_j(w)
+        ! NOTE: the MT measurement is incorporated here
+        !             also note that wp_taper and wq_taper can contain
+        !             uncertainty estimations
+        ! adds misfit measurement dtau, dlnA
+        fp1_adj(i_fstart: i_fend) &
+            ! = (conjg(p1_adj(i_fstart: i_fend)) +
+        =  2.0*(pw1_adj(i_fstart:i_fend)) &
+            * dcmplx(ddtau_w(i_fstart: i_fend),0.) &
+            * dcmplx(wp_taper(i_fstart: i_fend),0.)
+        fp2_adj(i_fstart: i_fend) &
+            ! = (conjg(p2_adj(i_fstart: i_fend)) +
+        = 2.0*(pw2_adj(i_fstart: i_fend)) &
+            * dcmplx(ddtau_w(i_fstart: i_fend),0.) &
+            * dcmplx(wp_taper(i_fstart: i_fend),0.)
+        fq1_adj(i_fstart: i_fend) &
+            = (q1_adj(i_fstart: i_fend) + conjg(q1_adj(i_fstart: i_fend)))&
+            * dcmplx(ddlnA_w(i_fstart: i_fend),0.) &
+            * dcmplx(wq_taper(i_fstart: i_fend),0.)
+        fq2_adj(i_fstart: i_fend) &
+            = (q2_adj(i_fstart: i_fend) + conjg(q2_adj(i_fstart: i_fend)))&
+            * dcmplx(ddlnA_w(i_fstart: i_fend),0.) &
+            * dcmplx(wq_taper(i_fstart: i_fend),0.)
+
+
+        ! IFFT into the time domain
+        call fftinv(LNPT,fp1_adj,dble(REVERSE_FFT),dble(deltat),fp1_adj_t)
+        call fftinv(LNPT,fp2_adj,dble(REVERSE_FFT),dble(deltat),fp2_adj_t)
+        call fftinv(LNPT,fq1_adj,dble(REVERSE_FFT),dble(deltat),fq1_adj_t)
+        call fftinv(LNPT,fq2_adj,dble(REVERSE_FFT),dble(deltat),fq2_adj_t)
+
+        ! create adjoint source
+        ! applies taper to time signal
+        fp1(1:nlen) = fp1(1:nlen) + real(tapers(1:nlen,ictaper) * &
+            fp1_adj_t(1:nlen),CUSTOM_REAL)
+        fp2(1:nlen) = fp2(1:nlen) + real(tapers(1:nlen,ictaper) * &
+            fp2_adj_t(1:nlen),CUSTOM_REAL)
+        fq1(1:nlen) = fq1(1:nlen) + real(tapers(1:nlen,ictaper) * &
+            fq1_adj_t(1:nlen),CUSTOM_REAL)
+        fq2(1:nlen) = fq2(1:nlen) + real(tapers(1:nlen,ictaper) * &
+            fq2_adj_t(1:nlen),CUSTOM_REAL)
+        enddo  ! ictaper
+        deallocate(s1_dtw_ho_all)
+        deallocate(s1_vtw_ho_all)
+        deallocate(s2_dtw_ho_all)
+        deallocate(s2_vtw_ho_all)
+    endif ! compute_adjoint 
 
 end subroutine mtm_DD_adj
 
 !==============================================================================
-!        subroutines used in mtm_measure() and mtm_adj()
-!==============================================================================
-
 !-----------------------------------------------------------------------
 subroutine CC_similarity(d1,d2,npts,deltat,&
         tstart1,tend1,tstart2,tend2,&
@@ -1089,57 +1086,6 @@ subroutine unwrap_phase(phi_wt,i_left,i_right)
     enddo
 
 end subroutine unwrap_phase
-! --------------------------------------------------------------------
-subroutine time_costaper(dat,syn,npts,istart,iend)
-    use constants
-    implicit none
-
-    ! input parameters
-    integer, intent(in) :: istart,iend,npts
-    real(kind=CUSTOM_REAL), dimension(*), intent(out) :: dat,syn
-
-    integer :: B1,B2,B3,B4,nlen_taper
-    integer i, n_width_left,n_width_right,nlen
-    real(kind=CUSTOM_REAL) :: fac
-
-    ! set the number of points corresponding to the taper width
-    if(istart<iend) then
-        nlen_taper=floor((iend-istart)/4.0)
-        B1=max(istart-nlen_taper,1)
-        B4=min(iend+nlen_taper,npts)
-        B2=istart
-        B3=iend
-    endif
-    n_width_left=B2-B1
-    n_width_right=B4-B3
-
-    ! left side
-    nlen=2*n_width_left
-    do i = 1,n_width_left
-    !fac = 1.                                         ! boxcar window
-    !fac = 1 - sfac1*((i-1) - real(nlen)/2.)**2       ! welch window
-    fac = 1. - cos(PI*(i-1)/(nlen-1))**ipwr_t
-    dat(B1+i-1)=dat(B1-1+i)*fac
-    syn(B1+i-1)=syn(B1-1+i)*fac
-    enddo
-
-    ! right side
-    nlen=2*n_width_right
-    do i = 1,n_width_right
-    !fac = 1.                                         ! boxcar window
-    !fac = 1 - sfac1*((i-1) - real(nlen)/2.)**2       ! welch window
-    fac = 1. - cos(PI*(i-1)/(nlen-1))**ipwr_t
-    dat(B4-i+1)=dat(B4-i+1)*fac
-    syn(B4-i+1)=syn(B4-i+1)*fac
-    enddo
-
-    ! beyond the window is zero
-    dat(1:B1)=0.0;
-    dat(B4:npts)=0.0
-    syn(1:B1)=0.0;
-    syn(B4:npts)=0.0
-
-end subroutine time_costaper
 ! ---------------------------------------------------------------------------
 subroutine cc_window(dat,npts,istart,iend,ishift,dlnA,dat_win)
     ! delay by ishift and scale by exp(dlnA)
@@ -1183,7 +1129,7 @@ subroutine cc_window_inverse(dat_win,npts,istart,iend,ishift,dlnA,dat)
 
     integer ::  i, j, nlen
 
-    nlen = iend - istart
+    nlen = iend - istart+1
 
     ! initialization
     dat(1:npts) = 0.d0
@@ -1200,82 +1146,6 @@ subroutine cc_window_inverse(dat_win,npts,istart,iend,ishift,dlnA,dat)
     enddo
 
 end subroutine cc_window_inverse
-! ---------------------------------------------------------------------------
-subroutine compute_cc(dat1, dat2, nlen, dt, ishift, tshift, dlnA, cc_max)
-    use constants
-    implicit none
-
-    ! time shift MEASUREMENT between data1 and data2
-    ! CHT: modified the subroutine to resemble the one used in FLEXWIN
-    ! tshift = T(dat1) - T(dat2)
-    ! dlnA = 0.5 * log(A(dat1)**2 / A(dat2)**2)
-
-    real(kind=CUSTOM_REAL), dimension(*), intent(in) :: dat1, dat2
-    integer, intent(in) :: nlen
-    real(kind=CUSTOM_REAL), intent(in) :: dt
-    real(kind=CUSTOM_REAL), intent(out) :: tshift, dlnA, cc_max
-    integer, intent(out) :: ishift
-
-    real(kind=CUSTOM_REAL) :: cc, norm_s, norm ! cr_shift
-    integer i1, i2, i, j, i_left, i_right, id_left, id_right
-    ! initialise shift and cross correlation to zero
-    ishift = 0
-    cc_max = 0.0
-
-    ! index of window limits
-    i1 = 1
-    i2 = nlen
-
-    ! length of window (number of points, including ends)
-    !nlen = i2 - i1 + 1
-
-    ! power of synthetic signal in window
-    norm_s = sqrt(sum(dat2(i1:i2)*dat2(i1:i2)))
-
-    ! left and right limits of index (time) shift search
-    ! NOTE: This looks OUTSIDE the time window of interest to compute TSHIFT and
-    ! CC.
-    !       How far to look outside, in theory, should be another parameter.
-    !       However, it does not matter as much if the data and synthetics are
-    !          zeroed outside the windows.
-    i_left = - nlen
-    i_right = nlen
-
-    ! i is the index to shift to be applied to DATA (data)
-    do i = i_left, i_right
-
-    ! normalization factor varies as you take different windows of data
-    id_left = max(1,i1+i)      ! left index for data window
-    id_right = min(nlen,i2+i)  ! right index for data window
-    norm = norm_s * sqrt(sum(dat1(id_left:id_right)*(dat1(id_left:id_right))))
-
-    ! cc as a function of i
-    cc = 0.
-    do j = i1, i2   ! loop over full window length
-    if((j+i).ge.1 .and. (j+i).le.nlen) cc = cc + dat2(j)*dat1(j+i)  ! d ishifted by i
-    enddo
-    cc = cc/norm
-
-    if (cc > cc_max) then
-        ! CHT: do not allow time shifts larger than the specified input range
-        ! This is an important criterion, since it may pick TSHIFT_MIN or
-        ! TSHIFT_MAX
-        ! if cc_max within the interval occurs on the boundary.
-        !         if( (i*dt >= TSHIFT_MIN).and.(i*dt <= TSHIFT_MAX) ) then
-        cc_max = cc
-        ishift = i
-        !         endif
-    endif
-
-    enddo
-    tshift = ishift*dt
-    ! The previously used expression for dlnA of Dahlen and Baig (2002),
-    ! is a first-order perturbation of ln(A1/A2) = (A1-A2)/A2 .
-    ! The new expression is better suited to getting Gaussian-distributed
-    ! values between -1 and 1, with dlnA = 0 indicating perfect fit, as before.    
-    dlnA = 0.5 * log( sum(dat1(i1:i2) * dat1(i1:i2)) / sum(dat2(i1:i2) * dat2(i1:i2)) )
-
-end subroutine compute_cc
 !-----------------------------------------------------------------------------
 subroutine compute_vel(syn,npts,deltat,nlen,syn_vel)
     use constants
@@ -1317,5 +1187,335 @@ subroutine compute_acc(syn,npts,deltat,nlen,syn_acc)
     call compute_vel(syn_vel,npts,deltat,nlen,syn_acc)
 
 end subroutine compute_acc
-
 !-----------------------------------------------------------------------------
+subroutine window_taper(npts,taper_percentage,taper_type,tas)
+    use constants
+    implicit none
+
+    ! input parameters
+    integer, intent(in) :: npts
+    real, intent(in) :: taper_percentage
+    character(len=4) :: taper_type
+    real, dimension(*), intent(out) :: tas
+
+    integer :: taper_len
+    integer :: i
+
+    ! initialization
+    tas(1:npts)=1.0
+
+    if (taper_percentage <= 0.0 .or. taper_percentage >= 1.0) then
+        taper_len = int(npts*taper_percentage / 2.0)
+    else
+        taper_len = int(npts*taper_percentage / 2.0 + 0.5)
+    endif
+
+    do i=1, taper_len
+    if (trim(taper_type) == 'boxc') then
+        tas(i)=1.0
+    elseif (trim(taper_type) == 'hann') then
+        tas(i)=0.5 - 0.5 * cos(2.0 * PI * (i-1) / (2 * taper_len - 1))
+    elseif (trim(taper_type) == 'hamm') then
+        tas(i)=0.54 - 0.46 * cos(2.0 * PI * (i-1) / (2 * taper_len - 1))
+    elseif (trim(taper_type) == 'cose') then
+        tas(i)=cos(PI * (i-1) / (2 * taper_len - 1) - PI / 2.0) ** ipwr_t
+    elseif (trim(taper_type) == 'cosp') then
+        tas(i)=1.0 - cos(PI * (i-1) / (2 * taper_len - 1)) ** ipwr_t
+    else
+        print*,'taper_type must be among "boxc"/"hann"/"hamm"/"cose"/"cosp"!'
+    endif
+    tas(npts-i+1)=tas(i)
+    enddo
+
+end subroutine window_taper
+!----------------------------------------------------------------------
+subroutine xcorr_calc(dat1,dat2,npts,i1,i2,ishift,dlnA,cc_max)
+    ! SAC libarary -- to get optimal shift (not scaled by time interval) 
+    ! corresponding to maximal cross-correlation coefficients
+    ! cross correlation time T(dat1-dat2) within window i1 and i2
+    ! finxed the window for dat2, shift the window for dat1
+
+    use constants
+    implicit none
+
+    real(kind=CUSTOM_REAL), dimension(*), intent(in) :: dat1,dat2
+    integer, intent(in) :: npts, i1, i2
+
+    ! outputs:
+    ! ishift = index lag (d-s) for max cross correlation
+    ! cc_max = maximum of cross correlation (normalised by sqrt(synthetic*data))
+    integer, intent(out) :: ishift
+    real(kind=CUSTOM_REAL), intent(out) :: cc_max,dlnA
+
+    ! local variables
+    integer :: nlen
+    integer :: i_left, i_right, i, j, id_left, id_right
+    real(kind=CUSTOM_REAL) :: cc, norm, norm_s
+
+    ! initialise shift and cross correlation to zero
+    ishift = 0
+    dlnA = 0.0
+    cc_max = 0.0
+
+    ! print*,'ishift,dlnA,cc_max :',ishift,dlnA,cc_max
+
+    if (i1.lt.1 .or. i1.gt.i2 .or. i2.gt.npts) then
+        write(*,*) 'Error with window limits: i1, i2, npts ', i1, i2, npts
+        return
+    endif
+
+    ! length of window (number of points, including ends)
+    nlen = i2 - i1 + 1
+    ! power of synthetic signal in window
+    norm_s = sqrt(sum(dat2(i1:i2)*dat2(i1:i2)))
+
+    ! left and right limits of index (time) shift search
+    ! NOTE: This looks OUTSIDE the time window of interest to compute TSHIFT and CC.
+    !       How far to look outside, in theory, should be another parameter.
+    !       However, it does not matter as much if the data and synthetics are
+    !          zeroed outside the windows, as currently done in calc_criteria.
+    i_left = -1*int(nlen/2.0)
+    i_right = int(nlen/2.0)
+    !!  i_left = -nlen
+    !!  i_right = nlen
+
+    ! i is the index to shift to be applied to DATA (d)
+    do i = i_left, i_right
+
+    ! normalization factor varies as you take different windows of d
+    id_left = max(1,i1+i)      ! left index for data window
+    id_right = min(npts,i2+i)  ! right index for data window
+    norm = norm_s * sqrt(sum(dat1(id_left:id_right)*(dat1(id_left:id_right))))
+
+    ! cc as a function of i
+    cc = 0.0
+    do j = i1, i2   ! loop over full window length
+    if((j+i).ge.1 .and. (j+i).le.npts) cc = cc + dat2(j)*dat1(j+i)  ! d is shifted by i
+    enddo
+    !print*,'norm,norm_s :',norm,norm_s
+
+    ! normalized by norm of data
+    if(norm > SMALL_VAL ) cc = cc/norm
+
+    ! keeping cc-max only
+    if (cc .gt. cc_max) then
+        cc_max = cc
+        ishift = i
+        !print*,'i,cc,cc_max :',i,cc,cc_max
+    endif
+    enddo
+
+    dlnA = 0.5 * log( sum(dat1(i1:i2) * dat1(i1:i2)) / sum(dat2(i1:i2) * dat2(i1:i2)) )
+
+    !print*,'ishift,dlnA,cc_max :',ishift,dlnA,cc_max
+    ! EXAMPLE: consider the following indexing:
+    ! Two records are from 1 to 100, window is i1=20 to i2=41.
+    !    --> nlen = 22, i_left = -11, i_right = 11
+    !    i   i1+i   i2+i  id_left  id_right
+    !  -11     9     30      9        30
+    !   -5    15     36     15        36
+    !    0    20     41     20        41
+    !    5    25     46     25        46
+    !   10    31     52     31        52
+
+end subroutine xcorr_calc
+!------------------------------------------------------------------------
+subroutine xconv(d,s,npts1,npts2,c_array,npts3)
+    ! Yanhua -- convolution of d with npts1 points and s with npts2 points 
+    ! output is c_array with length npts3
+    use constants
+    implicit none
+    ! inputs
+    real(kind=CUSTOM_REAL), dimension(*), intent(in) :: s,d
+    integer, intent(in) :: npts1,npts2,npts3
+
+    ! outputs:
+    real(kind=CUSTOM_REAL), dimension(*), intent(out) :: c_array
+
+    ! local variables
+    integer :: i_left, i_right, i,j,k
+    real(kind=CUSTOM_REAL),dimension(npts1+npts2-1) :: cc_array
+    real(kind=CUSTOM_REAL) :: cc
+
+    if (npts3 .lt. 1 .or. npts3 .gt. npts1+npts2-1) then
+        write(*,*) 'output length is improper: ', npts3
+        return
+    endif
+
+    i_left = 2
+    i_right = npts1+npts2
+    ! i is the index to shift to be applied to DATA (d)
+    k=0
+    do i = i_left, i_right
+    k=k+1
+    ! cc as a function of i or k
+    cc = 0.
+    do j = 1,npts1    ! loop over full window length
+    if((i-j) .ge. 1 .and. (i-j) .le. npts2) then
+        cc = cc + d(j)*s(i-j)  ! d is shifted by i
+    endif
+    enddo
+    cc_array(k)=cc
+    enddo
+    i_left=1+ceiling((npts1+npts2-1-npts3)*0.5)
+    i_right=npts3+ceiling((npts1+npts2-1-npts3)*0.5)
+    c_array(1:npts3)=cc_array(i_left:i_right)
+
+end subroutine xconv
+!-----------------------------------------------------------------------
+subroutine gaussmf(x,sig,c,npts,f)
+    ! Gaussian curve membership function
+    ! by Yanhua -- see matlab y = gaussmf(x,[sig c])
+    use constants
+    implicit none
+    ! inputs
+    real(kind=CUSTOM_REAL), dimension(*), intent(in) :: x
+    real(kind=CUSTOM_REAL), intent(in) :: sig,c
+    integer, intent(in) :: npts
+
+    ! outputs:
+    real(kind=CUSTOM_REAL), dimension(*), intent(out) :: f
+
+    integer :: i
+
+    do i=1,npts
+    f(i)=exp(-(x(i)-c)**2/(2*sig**2))
+    enddo
+end subroutine gaussmf
+!---------------------------------------------------------------------------
+subroutine gauspuls(x,npts,fc,sig,c,fe,f )
+    ! Gaussian curve membership function
+    use constants
+    implicit none
+    ! inputs
+    real(kind=CUSTOM_REAL), dimension(*), intent(in) :: x
+    real(kind=CUSTOM_REAL), intent(in) :: fc,sig,c
+    integer, intent(in) :: npts
+
+    ! outputs:
+    real(kind=CUSTOM_REAL), dimension(*), intent(out) :: fe, f
+
+    ! compute gaussian envelope
+    call gaussmf(x,sig,c,npts,fe)
+    ! gaussian modulated sine/cosine function
+    f(1:npts) = fe(1:npts) * cos(TWOPI*fc*x(1:npts));
+
+end subroutine gauspuls
+! ---------------------------------------------------------------------------
+subroutine WT(seism,NSTEP,level,NA)
+    use constants
+    implicit none
+
+    real(kind=CUSTOM_REAL), dimension(*), intent(out) :: seism
+    integer, intent(in) :: NSTEP,level
+    integer :: iend,istart,i,j,st
+    integer, intent(out) :: NA
+    real(kind=CUSTOM_REAL),dimension(:,:),allocatable :: basis, seism_WT
+    real(kind=CUSTOM_REAL) :: wc
+    real(kind=CUSTOM_REAL),dimension(:), allocatable :: nonzero_basis
+    character(len=500) :: fname
+
+    NA=0
+    if(level .gt. 0) then
+        if(level==12) NA=45046
+        if(level==11) NA=22518
+        if(level==10) NA=11254
+        if(level==9) NA=5622
+        if(level==8) NA=2806
+        if(level==7) NA=1398
+        if(level==6) NA=694
+        if(level==5) NA=342
+        if(level==4) NA=166
+        if(level==3) NA=78
+        if(level==2) NA=34
+        if(level==1) NA=12
+    endif !! level
+
+    if(level .gt. 0 .and. NA .gt. 0) then
+        allocate(nonzero_basis(NA))
+        allocate(basis(NSTEP,1))
+        allocate(seism_WT(NSTEP,1))
+        seism_WT(1:NSTEP,1)=0.0
+
+        ! print*,' load basis functions for wavelet Daubechies',nvm,' scale',level
+        write(fname,"(a,i0,a,i0)") 'scale_basis_Daubechies',nvm,'_scale',level
+        filename='WT_basis/'//trim(fname)//'.dat'
+        ! print*,filename
+        OPEN (UNIT=20,FILE=filename,STATUS='OLD',action='read',iostat=st)
+        if(st>0) then
+            print*,'Error opening file: ',filename
+            stop
+        else
+            read(20,*) nonzero_basis
+        end if
+        close(20)
+        ! initialization
+        iend=1
+        istart=2-NA
+        ! find shifted basis 
+        do while (istart<=NSTEP)
+        basis(1:NSTEP,1)=0.0
+        j=0
+        do i=istart,iend
+        j=j+1
+        if(i>=1 .and. i<=NSTEP) then
+            basis(i,1)=nonzero_basis(j)
+        endif
+        enddo
+        !! WT
+        wc=dot_product(seism(1:NSTEP),basis(1:NSTEP,1))
+        !   print*, 'istart=',istart,' wc=',wc
+        ! inverse wavelet transform to construct data
+        seism_WT(1:NSTEP,1)=seism_WT(1:NSTEP,1)+wc*basis(1:NSTEP,1)
+        !    print*, ' prepare for next basis '
+        iend=iend+2**level
+        istart=istart+2**level
+        !    print*, 'istart=',istart,' iend=',iend
+        enddo
+        seism(1:NSTEP)=seism_WT(1:NSTEP,1)
+
+        deallocate(nonzero_basis)
+        deallocate(basis)
+        deallocate(seism_WT)
+    endif  !! level
+
+end subroutine WT
+! ---------------------------------------------------------------------------
+subroutine split_string(instring,delimiter,outstring,nstring)
+    use constants,only: MAX_STRING_LEN, MAX_KERNEL_NUM
+    implicit none
+
+    character(len=MAX_STRING_LEN),intent(in) :: instring
+    character(len=MAX_STRING_LEN),intent(inout) :: outstring(MAX_KERNEL_NUM)
+    integer,intent(out) :: nstring
+    character,intent(in) :: delimiter
+
+    ! local parameters
+    integer :: index,istring
+    character(len=MAX_STRING_LEN) :: scan_string, remaining_string
+
+    ! intialization 
+    scan_string = TRIM(instring)
+    remaining_string=TRIM(instring)
+
+    ! try 
+    index = SCAN(scan_string,delimiter)
+    istring=0
+
+    ! loop
+    do while (len(trim(remaining_string))>0 .and. index>0)
+
+    istring=istring+1
+    outstring(istring) = scan_string(1:index-1)
+    remaining_string = scan_string(index+1:)
+
+    scan_string = trim(remaining_string)
+    index = SCAN(scan_string,delimiter)
+
+    enddo
+
+    nstring=istring+1
+    ! the last string 
+    outstring(nstring)= remaining_string
+end subroutine split_string
+! ---------------------------------------------------------------------------

@@ -126,13 +126,13 @@ subroutine LBFGS(Dm, Dg, g_new, NSTEP, m, BFGS_step, p_new)
     !! restart L-BFGS
     if ( dot_product(g_new(1:NSTEP), -z(1:NSTEP)) &
         / dot_product(g_new(1:NSTEP), g_new(1:NSTEP)) > 0.0 ) then
-        print*, 'restarting L-BFGS ... [not the descent direction]'
-        p_new(1:NSTEP) = - g_new(1:NSTEP)
-        BFGS_step = 1
-    else
-        !! L-BFGS search direction 
-        p_new(1:NSTEP) = - z(1:NSTEP)
-        BFGS_step = BFGS_step+1
-    endif
-
+    print*, 'restarting L-BFGS ... [not the descent direction]'
+    p_new(1:NSTEP) = - g_new(1:NSTEP)
+    BFGS_step = 1
+else
+    !! L-BFGS search direction 
+    p_new(1:NSTEP) = - z(1:NSTEP)
+    BFGS_step = BFGS_step+1
+endif
 end subroutine LBFGS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

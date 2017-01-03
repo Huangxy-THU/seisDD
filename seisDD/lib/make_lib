@@ -12,14 +12,10 @@ MOD_DIR=./src
 LIB_preprocess=seismo.a
 LIBSRC_preprocess=\
          ${MOD_DIR}/constants.f90 \
-         ${SRC_DIR}/m_hilbert_transform.f90 \
-         ${SRC_DIR}/seismo_sub.f90 \
          ${SRC_DIR}/ma_sub2.f90 \
          ${SRC_DIR}/ma_sub.f90 \
          ${SRC_DIR}/adjoint_lib.f90 \
-         ${SRC_DIR}/preprocess_lib.f90 \
-         ${SRC_DIR}/optimization_lib.f90 \
-         ${SRC_DIR}/split_string.f90 
+         ${SRC_DIR}/optimization_lib.f90 
 
 LIBOBJ_preprocess = ${LIBSRC_preprocess:%.f=${LIB_preprocess}(%.o)} ${LIBSRC_preprocess:%.f90=${LIB_preprocess}(%.o)} \
          ${LIBSRC_preprocess:%.F=${LIB_preprocess}(%.o)}

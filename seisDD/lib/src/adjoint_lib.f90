@@ -23,7 +23,7 @@ subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,&
     real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
- 
+
     ! initialization within loop of irec
     adj(1:NSTEP)=0.d0
     num=1
@@ -34,7 +34,7 @@ subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,&
         if(DISPLAY_DETAILS) print*, 'CC (traveltime) misfit (s-d)'
         call CC_misfit(d,s,NSTEP,deltat,tstart,tend,taper_percentage,taper_type, &
             compute_adjoint,adj,num,misfit)
-     case ("WD")
+    case ("WD")
         if(DISPLAY_DETAILS) print*, 'WD (waveform-difference) misfit (s-d)'
         call WD_misfit(d,s,NSTEP,deltat,tstart,tend,taper_percentage,taper_type, &
             compute_adjoint,adj,num,misfit)
@@ -56,7 +56,7 @@ subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,&
             'MT',compute_adjoint,adj,num,misfit)
     case ("MA")
         if(DISPLAY_DETAILS) print*, 'MA (multitaper amplitude) misfit (d-s)'
-    call MT_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
+        call MT_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
             'MA',compute_adjoint,adj,num,misfit)
     case default
         print*, 'measurement_type must be among "CC"/"WD"/"ET"/"ED"/"IP"/"MT"/"MA"/...';
@@ -97,31 +97,31 @@ subroutine misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
     case ("CC")
         if(DISPLAY_DETAILS) print*, '*** Double-difference CC (traveltime) misfit'
         call CC_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,&
-        tstart,tend,tstart_ref,tend_ref,&
-        taper_percentage,taper_type,&
-        compute_adjoint,&
-        adj,adj_ref,num,misfit)
+            tstart,tend,tstart_ref,tend_ref,&
+            taper_percentage,taper_type,&
+            compute_adjoint,&
+            adj,adj_ref,num,misfit)
     case ("WD")
         if(DISPLAY_DETAILS) print*, '*** Double-difference WD (waveform) misfit'
         call WD_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,&
-        tstart,tend,tstart_ref,tend_ref,&
-        taper_percentage,taper_type,&
-        compute_adjoint,&
-        adj,adj_ref,num,misfit)
+            tstart,tend,tstart_ref,tend_ref,&
+            taper_percentage,taper_type,&
+            compute_adjoint,&
+            adj,adj_ref,num,misfit)
     case ("IP")
         if(DISPLAY_DETAILS) print*, '*** Double-difference IP (instantaneous) misfit'
         call IP_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,&
-        tstart,tend,tstart_ref,tend_ref,&
-        taper_percentage,taper_type,&
-        compute_adjoint,&
-        adj,adj_ref,num,misfit)
+            tstart,tend,tstart_ref,tend_ref,&
+            taper_percentage,taper_type,&
+            compute_adjoint,&
+            adj,adj_ref,num,misfit)
     case ("MT")
         if(DISPLAY_DETAILS) print*, '*** Double-difference MT (multitaper) misfit'
         call MT_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,f0,&
-        tstart,tend,tstart_ref,tend_ref,&
-        taper_percentage,taper_type,&
-        'MT',compute_adjoint,&
-        adj,adj_ref,num,misfit)
+            tstart,tend,tstart_ref,tend_ref,&
+            taper_percentage,taper_type,&
+            'MT',compute_adjoint,&
+            adj,adj_ref,num,misfit)
     case default
         print*, 'measurement_type must be among CC/WD/IP/MT ...';
         stop
@@ -285,7 +285,7 @@ subroutine CC_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     err_dt_cc=1.0
     err_dlnA_cc=1.0
     if(USE_ERROR_CC) call cc_error(d_tw,s_tw,npts,deltat,nlen,ishift,dlnA,&
-                        err_dt_cc,err_dlnA_cc)
+        err_dt_cc,err_dlnA_cc)
     if(NORMALIZE) then
         ! arrival time estimated from peak of waves
         const=(i_tstart+MAXLOC(abs(d_tw),1))*deltat
@@ -341,7 +341,6 @@ subroutine ET_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     !! Envelope time shift between d and s
 
     use constants
-    use m_hilbert_transform
     implicit none
 
     ! inputs & outputs 
@@ -495,7 +494,6 @@ subroutine ED_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     !! Envelope difference between d and s
 
     use constants
-    use m_hilbert_transform
     implicit none
 
     ! inputs & outputs 
@@ -515,7 +513,7 @@ subroutine ED_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
 
     ! error 
     real(kind=CUSTOM_REAL) :: const, err_ED
- 
+
     ! window
     integer :: nlen
     integer :: i_tstart, i_tend
@@ -635,7 +633,6 @@ subroutine IP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     !! Instantaneous phase difference between d and s (need to be fixed)
 
     use constants
-    use m_hilbert_transform
     implicit none
 
     ! inputs & outputs 
@@ -680,7 +677,7 @@ subroutine IP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     call window_taper(nlen,taper_percentage,taper_type,tas)
     s_tw(1:nlen)=tas(1:nlen)*s(i_tstart:i_tend)
     d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
-    
+
     !! Instantaneous phase misfit
     ! initialization 
     norm_s(:)=0.0
@@ -798,7 +795,7 @@ subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
 
     ! index
     integer :: i,j
-    
+
     ! window
     integer :: nlen
     integer :: i_tstart, i_tend
@@ -834,155 +831,155 @@ subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
     call window_taper(nlen,taper_percentage,taper_type,tas)
     s_tw(1:nlen)=tas(1:nlen)*s(i_tstart:i_tend)
     d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
-   
+
     !!   find the relaible frequency limit
     call frequency_limit(s_tw,nlen,deltat,f0/2.5,f0*2.5,i_fstart,i_fend)
 
     if(i_fstart<i_fend) then  !MT measurement
-    !! cc correction
-    call xcorr_calc(d_tw,s_tw,npts,1,nlen,ishift,dlnA,cc_max) ! T(d-s)
-    tshift= ishift*deltat
-    if( DISPLAY_DETAILS) then
-        print*
-        print*, 'xcorr_cal: d-s'
-        print*, 'xcorr_calc: calculated ishift/tshift = ', ishift,tshift
-        print*, 'xcorr_calc: calculated dlnA = ',dlnA
-        print*, 'xcorr_calc: cc_max ',cc_max
-    endif
-
-    !! cc_error
-    err_dt_cc=0.0
-    err_dlnA_cc=1.0
-    if(USE_ERROR_CC)  call cc_error(d_tw,s_tw,npts,deltat,nlen,ishift,dlnA,&
-        err_dt_cc,err_dlnA_cc)
-
-    ! correction for d using negative cc
-    ! fixed window for s, correct the window for d
-    call cc_window(d,npts,i_tstart,i_tend,-ishift,0.0,d_tw_cc)
-    d_tw_cc(1:nlen)=tas(1:nlen)*d_tw_cc(1:nlen)
-
-    if( DISPLAY_DETAILS) then
-        print*
-        print*, 'CC corrections to data using negative ishift/tshift/dlnA: ',-ishift,-tshift,-dlnA
-        open(1,file=trim(output_dir)//'/dat_syn_datcc',status='unknown')
-        do  i = 1,nlen
-        write(1,'(I5,3f15.5)') i, d_tw(i),s_tw(i),d_tw_cc(i)
-        enddo
-        close(1)
-    endif
-
-    d_tw = d_tw_cc
-
-    !! MT misfit
-    !-----------------------------------------------------------------------------
-    !  set up FFT for the frequency domain
-    !----------------------------------------------------------------------------- 
-    df = 1./(NPT*deltat)
-    dw = TWOPI * df
-    ! calculate frequency spacing of sampling points
-    df_new = 1.0 / (nlen*deltat)
-    ! assemble omega vector (NPT is the FFT length)
-    wvec(:) = 0.
-    do j = 1,NPT
-    if(j > NPT/2+1) then
-        wvec(j) = dw*(j-NPT-1)   ! negative frequencies in second half
-    else
-        wvec(j) = dw*(j-1)       ! positive frequencies in first half
-    endif
-    enddo
-    fvec = wvec / TWOPI
-
-    if( DISPLAY_DETAILS) then
-        print*
-        print*, 'find the spectral boundaries for reliable measurement'
-        print*, 'min, max time limits : ',i_tstart, i_tend, nlen
-        print*, 'min, max frequency limits : ', i_fstart, i_fend
-        print*, 'frequency interval df= ', df, ' dw=', dw
-        print*, 'effective bandwidth (Hz) : ',fvec(i_fstart), fvec(i_fend), fvec(i_fend)-fvec(i_fstart)
-        print*, 'half time-bandwidth product : ', NW
-        print*, 'number of tapers : ',ntaper
-        print*, 'resolution of multitaper (Hz) : ', NW/(nlen*deltat)
-        print*, 'number of segments of frequency bandwidth : ', ceiling((fvec(i_fend)-fvec(i_fstart))*nlen*deltat/NW)
-    endif
-
-    ! calculate the tapers
-    allocate(tapers(NPT,ntaper))
-    call staper(nlen, dble(NW), ntaper, tapers, NPT, ey1, ey2)
-
-    if( DISPLAY_DETAILS) then
-        do ictaper=1,ntaper
-        write(filename,'(i1)') ictaper
-        open(1,file=trim(output_dir)//'/'//'taper_t_'//trim(adjustl(filename)),status='unknown')
-        do i = 1,nlen
-        write(1,'(f15.2,E15.5)') (i-1)*deltat,tapers(i,ictaper)
-        ! write(1,'(f15.2,<ntaper>e15.5)') (i-1)*deltat,tapers(i,1:ntaper)
-        enddo
-        close(1)
-        enddo
-    endif
-
-    !! mt phase and ampplitude measurement 
-    call mt_measure(d_tw,s_tw,npts,deltat,nlen,tshift,0.0,i_fstart,i_fend,&
-        wvec,&
-        trans_func,dtau_w,dlnA_w,err_dtau_mt,err_dlnA_mt) !d-s
-
-    !! misfit & adjoint 
-    call mtm_adj(s_tw,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
-        err_dt_cc,err_dlnA_cc,&
-        err_dtau_mt,err_dlnA_mt, &
-        COMPUTE_ADJOINT, &
-        adj_p_tw,adj_q_tw, misfit_p, misfit_q)
-
-    if(misfit_type=='MT') then 
-        ! MT misfit
-        do i=i_fstart,i_fend
-        write(IOUT,*) dtau_w(i)*sqrt(df)
-        enddo
-        misfit=misfit_p
-    elseif(misfit_type=='MA') then
-        ! MA misfit
-        do i=i_fstart,i_fend
-        write(IOUT,*) dlnA_w(i)*sqrt(df)
-        misfit=misfit_q
-        enddo
-    endif
-    num=i_fend-i_fstart+1
-
-    if(DISPLAY_DETAILS) then
-        !! write into file 
-        open(1,file=trim(output_dir)//'/dtau_mtm',status='unknown')
-        open(2,file=trim(output_dir)//'/dlnA_mtm',status='unknown')
-        do  i = i_fstart,i_fend
-        write(1,'(3e15.5)') fvec(i),dtau_w(i),tshift !err_dtau_mt(i)
-        write(2,'(3e15.5)') fvec(i),dlnA_w(i),dlnA !err_dlnA_mt(i)
-        enddo
-        close(1)
-        close(2)
-    endif
-
-    !! MT adjoint
-    if(COMPUTE_ADJOINT) then
-        ! inverse window and taper again 
-        if(misfit_type=='MT') then
-            adj(i_tstart:i_tend)=tas(1:nlen)*adj_p_tw(1:nlen)
-        elseif(misfit_type=='MA') then
-            adj(i_tstart:i_tend)=tas(1:nlen)*adj_q_tw(1:nlen)
+        !! cc correction
+        call xcorr_calc(d_tw,s_tw,npts,1,nlen,ishift,dlnA,cc_max) ! T(d-s)
+        tshift= ishift*deltat
+        if( DISPLAY_DETAILS) then
+            print*
+            print*, 'xcorr_cal: d-s'
+            print*, 'xcorr_calc: calculated ishift/tshift = ', ishift,tshift
+            print*, 'xcorr_calc: calculated dlnA = ',dlnA
+            print*, 'xcorr_calc: cc_max ',cc_max
         endif
-        deallocate(tas)
+
+        !! cc_error
+        err_dt_cc=0.0
+        err_dlnA_cc=1.0
+        if(USE_ERROR_CC)  call cc_error(d_tw,s_tw,npts,deltat,nlen,ishift,dlnA,&
+            err_dt_cc,err_dlnA_cc)
+
+        ! correction for d using negative cc
+        ! fixed window for s, correct the window for d
+        call cc_window(d,npts,i_tstart,i_tend,-ishift,0.0,d_tw_cc)
+        d_tw_cc(1:nlen)=tas(1:nlen)*d_tw_cc(1:nlen)
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_MT_win',status='unknown')
-            do  i =  i_tstart,i_tend
-            write(1,'(I5,e15.5)') i,adj(i)
+            print*
+            print*, 'CC corrections to data using negative ishift/tshift/dlnA: ',-ishift,-tshift,-dlnA
+            open(1,file=trim(output_dir)//'/dat_syn_datcc',status='unknown')
+            do  i = 1,nlen
+            write(1,'(I5,3f15.5)') i, d_tw(i),s_tw(i),d_tw_cc(i)
+            enddo
+            close(1)
+        endif
+
+        d_tw = d_tw_cc
+
+        !! MT misfit
+        !-----------------------------------------------------------------------------
+        !  set up FFT for the frequency domain
+        !----------------------------------------------------------------------------- 
+        df = 1./(NPT*deltat)
+        dw = TWOPI * df
+        ! calculate frequency spacing of sampling points
+        df_new = 1.0 / (nlen*deltat)
+        ! assemble omega vector (NPT is the FFT length)
+        wvec(:) = 0.
+        do j = 1,NPT
+        if(j > NPT/2+1) then
+            wvec(j) = dw*(j-NPT-1)   ! negative frequencies in second half
+        else
+            wvec(j) = dw*(j-1)       ! positive frequencies in first half
+        endif
+        enddo
+        fvec = wvec / TWOPI
+
+        if( DISPLAY_DETAILS) then
+            print*
+            print*, 'find the spectral boundaries for reliable measurement'
+            print*, 'min, max time limits : ',i_tstart, i_tend, nlen
+            print*, 'min, max frequency limits : ', i_fstart, i_fend
+            print*, 'frequency interval df= ', df, ' dw=', dw
+            print*, 'effective bandwidth (Hz) : ',fvec(i_fstart), fvec(i_fend), fvec(i_fend)-fvec(i_fstart)
+            print*, 'half time-bandwidth product : ', NW
+            print*, 'number of tapers : ',ntaper
+            print*, 'resolution of multitaper (Hz) : ', NW/(nlen*deltat)
+            print*, 'number of segments of frequency bandwidth : ', ceiling((fvec(i_fend)-fvec(i_fstart))*nlen*deltat/NW)
+        endif
+
+        ! calculate the tapers
+        allocate(tapers(NPT,ntaper))
+        call staper(nlen, dble(NW), ntaper, tapers, NPT, ey1, ey2)
+
+        if( DISPLAY_DETAILS) then
+            do ictaper=1,ntaper
+            write(filename,'(i1)') ictaper
+            open(1,file=trim(output_dir)//'/'//'taper_t_'//trim(adjustl(filename)),status='unknown')
+            do i = 1,nlen
+            write(1,'(f15.2,E15.5)') (i-1)*deltat,tapers(i,ictaper)
+            ! write(1,'(f15.2,<ntaper>e15.5)') (i-1)*deltat,tapers(i,1:ntaper)
+            enddo
+            close(1)
+            enddo
+        endif
+
+        !! mt phase and ampplitude measurement 
+        call mt_measure(d_tw,s_tw,npts,deltat,nlen,tshift,0.0,i_fstart,i_fend,&
+            wvec,&
+            trans_func,dtau_w,dlnA_w,err_dtau_mt,err_dlnA_mt) !d-s
+
+        !! misfit & adjoint 
+        call mtm_adj(s_tw,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
+            err_dt_cc,err_dlnA_cc,&
+            err_dtau_mt,err_dlnA_mt, &
+            COMPUTE_ADJOINT, &
+            adj_p_tw,adj_q_tw, misfit_p, misfit_q)
+
+        if(misfit_type=='MT') then 
+            ! MT misfit
+            do i=i_fstart,i_fend
+            write(IOUT,*) dtau_w(i)*sqrt(df)
+            enddo
+            misfit=misfit_p
+        elseif(misfit_type=='MA') then
+            ! MA misfit
+            do i=i_fstart,i_fend
+            write(IOUT,*) dlnA_w(i)*sqrt(df)
+            misfit=misfit_q
+            enddo
+        endif
+        num=i_fend-i_fstart+1
+
+        if(DISPLAY_DETAILS) then
+            !! write into file 
+            open(1,file=trim(output_dir)//'/dtau_mtm',status='unknown')
+            open(2,file=trim(output_dir)//'/dlnA_mtm',status='unknown')
+            do  i = i_fstart,i_fend
+            write(1,'(3e15.5)') fvec(i),dtau_w(i),tshift !err_dtau_mt(i)
+            write(2,'(3e15.5)') fvec(i),dlnA_w(i),dlnA !err_dlnA_mt(i)
             enddo
             close(1)
             close(2)
         endif
 
-    endif
+        !! MT adjoint
+        if(COMPUTE_ADJOINT) then
+            ! inverse window and taper again 
+            if(misfit_type=='MT') then
+                adj(i_tstart:i_tend)=tas(1:nlen)*adj_p_tw(1:nlen)
+            elseif(misfit_type=='MA') then
+                adj(i_tstart:i_tend)=tas(1:nlen)*adj_q_tw(1:nlen)
+            endif
+            deallocate(tas)
 
-   else ! CC adj
-       if(DISPLAY_DETAILS) print*, 'CC (traveltime) misfit (s-d)'
+            if( DISPLAY_DETAILS) then
+                open(1,file=trim(output_dir)//'/adj_MT_win',status='unknown')
+                do  i =  i_tstart,i_tend
+                write(1,'(I5,e15.5)') i,adj(i)
+                enddo
+                close(1)
+                close(2)
+            endif
+
+        endif
+
+    else ! CC adj
+        if(DISPLAY_DETAILS) print*, 'CC (traveltime) misfit (s-d)'
         call CC_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type, &
             compute_adjoint,adj,num,misfit)
     endif
@@ -1296,7 +1293,6 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     !! Instantaneous phase double-difference
 
     use constants
-    use m_hilbert_transform
     implicit none
 
     ! inputs & outputs 
@@ -1568,216 +1564,209 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     i_fend = min(i_fend1,i_fend2)
     i_fstart = max(i_fstart1,i_fstart2)
     if(i_fstart<i_fend) then  !DD MT measurement
-    !! cc correction
-    call xcorr_calc(d1_tw,d2_tw,npts,1,nlen,ishift_obs,dlnA_obs,cc_max_obs)
-    tshift_obs= ishift_obs*deltat 
-    call xcorr_calc(s1_tw,s2_tw,npts,1,nlen,ishift_syn,dlnA_syn,cc_max_syn) 
-    tshift_syn= ishift_syn*deltat
-    !! double-difference cc-measurement 
-    ddtshift_cc = tshift_syn - tshift_obs
-    ddlnA_cc = dlnA_syn - dlnA_obs
+        !! cc correction
+        call xcorr_calc(d1_tw,d2_tw,npts,1,nlen,ishift_obs,dlnA_obs,cc_max_obs)
+        tshift_obs= ishift_obs*deltat 
+        call xcorr_calc(s1_tw,s2_tw,npts,1,nlen,ishift_syn,dlnA_syn,cc_max_syn) 
+        tshift_syn= ishift_syn*deltat
+        !! double-difference cc-measurement 
+        ddtshift_cc = tshift_syn - tshift_obs
+        ddlnA_cc = dlnA_syn - dlnA_obs
 
-    if(USE_ERROR_CC) then
-        !! cc_error 
-        call cc_error(d1_tw,d2_tw,npts,deltat,nlen,ishift_obs,dlnA_obs,err_dt_cc_obs,err_dlnA_cc_obs)
-        call cc_error(s1_tw,s2_tw,npts,deltat,nlen,ishift_syn,dlnA_syn,err_dt_cc_syn,err_dlnA_cc_syn)
-    endif
-
-    ! correction for d2 using positive cc
-    ! fixed window for d1, correct the window for d2
-    dlnA_obs = 0.0
-    dlnA_syn = 0.0
-    !call cc_window(d2,npts,window_type,i_tstart2,i_tend2,ishift_obs,dlnA_obs,nlen2,d2_tw_cc)
-    call cc_window(d2,npts,i_tstart2,i_tend2,ishift_obs,dlnA_obs,d2_tw_cc)
-    d2_tw_cc(1:nlen2)=tas2(1:nlen2)*d2_tw_cc(1:nlen2)
-    !call cc_window(s2,npts,window_type,i_tstart2,i_tend2,ishift_syn,dlnA_syn,nlen2,s2_tw_cc)
-    call cc_window(s2,npts,i_tstart2,i_tend2,ishift_syn,dlnA_syn,s2_tw_cc)
-    s2_tw_cc(1:nlen2)=tas2(1:nlen2)*s2_tw_cc(1:nlen2)
-    if( DISPLAY_DETAILS) then
-        print*
-        print*, 'time-domain winodw'
-        print*, 'time window boundaries for d1/s1: ',i_tstart1,i_tend1
-        print*, 'time window length for d1/s1 : ', nlen1
-        print*, 'time window boundaries for d2/s2: ',i_tstart2,i_tend2
-        print*, 'time window length for d2/s2 : ', nlen2
-        print*, 'combined window length nlen = ',nlen
-        print*, 'cc ishift/tshift/dlnA of (d1-d2): ', ishift_obs,tshift_obs,dlnA_obs
-        print*, 'cc ishift/tshift/dlnA of (s1-s2): ', ishift_syn,tshift_syn,dlnA_syn
-        print*, 'cc double-difference ddtshift/ddlnA of (s1-s2)-(d1-d2): ' &
-            ,ddtshift_cc, ddlnA_cc
-        print* 
-        open(1,file=trim(output_dir)//'/dat_datcc',status='unknown')
-        open(2,file=trim(output_dir)//'/syn_syncc',status='unknown')
-        do  i = 1,nlen
-        write(1,'(I5,3e15.5)') i, d1_tw(i),d2_tw(i),d2_tw_cc(i)
-        write(2,'(I5,3e15.5)') i, s1_tw(i),s2_tw(i),s2_tw_cc(i)
-        enddo
-        close(1)
-        close(2)
-    endif
-
-    !! DD multitaper-misfit
-
-    !-----------------------------------------------------------------------------
-    !  set up FFT for the frequency domain
-    !----------------------------------------------------------------------------- 
-    df = 1./(NPT*deltat)
-    dw = TWOPI * df
-    ! calculate frequency spacing of sampling points
-    df_new = 1.0 / (nlen*deltat)
-    ! assemble omega vector (NPT is the FFT length)
-    wvec(:) = 0.
-    do j = 1,NPT
-    if(j > NPT/2+1) then
-        wvec(j) = dw*(j-NPT-1)   ! negative frequencies in second half
-    else
-        wvec(j) = dw*(j-1)       ! positive frequencies in first half
-    endif
-    enddo
-    fvec = wvec / TWOPI
-
-    if( DISPLAY_DETAILS) then
-        print*,  'NPT/df/dw/df_new :', NPT,df,dw,df_new  
-        print*
-        print*, 'find the spectral boundaries for reliable measurement'
-        print*, 'min, max frequency limit for 1 : ',i_fstart1,i_fend1,fvec(i_fstart1),fvec(i_fend1)
-        print*, 'min, max frequency limit for 2 : ',i_fstart2,i_fend2,fvec(i_fstart2),fvec(i_fend2)
-        print*, 'effective bandwidth (Hz) : ',i_fstart,i_fend,fvec(i_fend)-fvec(i_fstart)
-        print*, 'half time-bandwidth product : ', NW
-        print*, 'number of tapers : ',ntaper
-        print*, 'resolution of multitaper (Hz) : ', NW/(nlen*deltat)
-        print*, 'number of segments of frequency bandwidth : ', ceiling((fvec(i_fend)-fvec(i_fstart))/(NW/(nlen*deltat)))
-        print*
-    endif
-
-    ! calculate the tapers
-    allocate(tapers(NPT,ntaper))
-    call staper(nlen, dble(NW), ntaper, tapers, NPT, ey1, ey2)
-
-    if( DISPLAY_DETAILS) then
-        do ictaper=1,ntaper
-        write(filename,'(i1)') ictaper
-        open(1,file=trim(output_dir)//'/'//'taper_t_'//trim(adjustl(filename)),status='unknown')
-        do i = 1,nlen
-        write(1,'(f15.2,E15.5)') (i-1)*deltat,tapers(i,ictaper)
-        ! write(1,'(f15.2,<ntaper>e15.5)') (i-1)*deltat,tapers(i,1:ntaper)
-        enddo
-        close(1)
-        enddo
-    endif
-
-    !! mt phase and ampplitude measurement 
-    call mt_measure(d1_tw,d2_tw_cc,npts,deltat,nlen,tshift_obs,dlnA_obs,i_fstart,i_fend,&
-        wvec,&
-    trans_func_obs,dtau_w_obs,dlnA_w_obs,err_dtau_mt_obs,err_dlnA_mt_obs)
-    call mt_measure(s1_tw,s2_tw_cc,npts,deltat,nlen,tshift_syn,dlnA_syn,i_fstart,i_fend,&
-        wvec,&
-    trans_func_syn,dtau_w_syn,dlnA_w_syn,err_dtau_mt_syn,err_dlnA_mt_syn)
-    ! double-difference measurement 
-    ddtau_w = dtau_w_syn-dtau_w_obs
-    ddlnA_w = dlnA_w_syn-dlnA_w_obs
-
-    ! misfit & adj
-    call mtm_DD_adj(s1_tw,s2_tw_cc,NPTS,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,&
-        err_dt_cc_obs,err_dt_cc_syn,err_dlnA_cc_obs,err_dlnA_cc_syn, &
-        err_dtau_mt_obs,err_dtau_mt_syn,err_dlnA_mt_obs,err_dlnA_mt_syn, &
-        compute_adjoint,&        
-        fp1_tw,fp2_tw,fq1_tw,fq2_tw,misfit_p,misfit_q)
-
-    ! MT misfit
-    !misfit_output = sqrt(sum((ddtau_w(i_fstart:i_fend))**2*dw)) * cc_max_obs
-    if(misfit_type=='MT') then
-        ! MT misfit
-        do i=i_fstart,i_fend
-        write(IOUT,*) ddtau_w(i)*sqrt(dw)
-        enddo
-        misfit=misfit_p
-    elseif(misfit_type=='MA') then
-        ! MA misfit
-        do i=i_fstart,i_fend
-        write(IOUT,*) ddlnA_w(i)*sqrt(dw)
-        enddo
-        misfit=misfit_q
-    endif
-    num=i_fend-i_fstart+1
-
-    if(DISPLAY_DETAILS) then
-        !! write into file 
-        open(1,file=trim(output_dir)//'/trans_func_obs',status='unknown')
-        open(2,file=trim(output_dir)//'/trans_func_syn',status='unknown')
-        open(3,file=trim(output_dir)//'/ddtau_mtm',status='unknown')
-        open(4,file=trim(output_dir)//'/ddlnA_mtm',status='unknown')
-        open(5,file=trim(output_dir)//'/err_dtau_dlnA_mtm',status='unknown')
-        do  i = i_fstart,i_fend
-        write(1,'(f15.5,e15.5)') fvec(i),abs(trans_func_obs(i))
-        write(2,'(f15.5,e15.5)') fvec(i),abs(trans_func_syn(i))
-        write(3,'(f15.5,2e15.5)') fvec(i),ddtau_w(i),ddtshift_cc
-        write(4,'(f15.5,2e15.5)') fvec(i),ddlnA_w(i),ddlnA_cc
-        write(5,'(f15.5,2e15.5)') fvec(i),err_dtau_mt_obs(i)*err_dtau_mt_syn(i), &
-            err_dlnA_mt_obs(i)*err_dlnA_mt_syn(i)
-        enddo
-        close(1)
-        close(2)
-        close(3)
-        close(4)
-        close(5)
-    endif
-
-    !!DD cc-adjoint
-    if(COMPUTE_ADJOINT) then
-        ! initialization 
-        adj1(1:npts) = 0.0
-        adj2(1:npts) = 0.0
-
-        ! adjoint source
-        fp1_tw(1:nlen)= fp1_tw(1:nlen) * cc_max_obs *cc_max_obs
-        fp2_tw(1:nlen)= fp2_tw(1:nlen) * cc_max_obs *cc_max_obs
-        fq1_tw(1:nlen)= fq1_tw(1:nlen) * cc_max_obs *cc_max_obs
-        fq2_tw(1:nlen)= fq2_tw(1:nlen) * cc_max_obs *cc_max_obs
-
-        ! reverse window and taper again 
-        if(misfit_type=='MT') then
-        !call cc_window_inverse(fp1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
-        !call cc_window_inverse(fp2_tw,npts,window_type,i_tstart2,i_tend2,ishift_syn,0.d0,adj2)
-        ! reverse window and taper again
-        call cc_window_inverse(fp1_tw,npts,i_tstart1,i_tend1,0.0,0.0,adj1)
-        adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1(i_tstart1:i_tend1)
-        call cc_window_inverse(fp2_tw,npts,i_tstart2,i_tend2,ishift_syn,0.0,adj2)
-        adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2(i_tstart2:i_tend2)
-
-        elseif(misfit_type=='MA') then
-        !call cc_window_inverse(fq1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
-        !call cc_window_inverse(fq2_tw,npts,window_type,i_tstart2,i_tend2,ishift_syn,0.d0,adj2)
-        ! reverse window and taper again 
-        call cc_window_inverse(fq1_tw,npts,i_tstart1,i_tend1,0.0,0.0,adj1)
-        adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1(i_tstart1:i_tend1)
-        call cc_window_inverse(fq2_tw,npts,i_tstart2,i_tend2,ishift_syn,0.0,adj2)
-        adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2(i_tstart2:i_tend2)
+        if(USE_ERROR_CC) then
+            !! cc_error 
+            call cc_error(d1_tw,d2_tw,npts,deltat,nlen,ishift_obs,dlnA_obs,err_dt_cc_obs,err_dlnA_cc_obs)
+            call cc_error(s1_tw,s2_tw,npts,deltat,nlen,ishift_syn,dlnA_syn,err_dt_cc_syn,err_dlnA_cc_syn)
         endif
 
+        ! correction for d2 using positive cc
+        ! fixed window for d1, correct the window for d2
+        dlnA_obs = 0.0
+        dlnA_syn = 0.0
+        call cc_window(d2,npts,i_tstart2,i_tend2,ishift_obs,dlnA_obs,d2_tw_cc)
+        d2_tw_cc(1:nlen2)=tas2(1:nlen2)*d2_tw_cc(1:nlen2)
+        call cc_window(s2,npts,i_tstart2,i_tend2,ishift_syn,dlnA_syn,s2_tw_cc)
+        s2_tw_cc(1:nlen2)=tas2(1:nlen2)*s2_tw_cc(1:nlen2)
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj1_MT_win',status='unknown')
-            open(2,file=trim(output_dir)//'/adj2_MT_win',status='unknown')
-            do  i =  i_tstart1,i_tend1
-            write(1,*) i,adj1(i)
-            enddo
-            do  i =  i_tstart2,i_tend2
-            write(2,*) i,adj2(i)
+            print*
+            print*, 'time-domain winodw'
+            print*, 'time window boundaries for d1/s1: ',i_tstart1,i_tend1
+            print*, 'time window length for d1/s1 : ', nlen1
+            print*, 'time window boundaries for d2/s2: ',i_tstart2,i_tend2
+            print*, 'time window length for d2/s2 : ', nlen2
+            print*, 'combined window length nlen = ',nlen
+            print*, 'cc ishift/tshift/dlnA of (d1-d2): ', ishift_obs,tshift_obs,dlnA_obs
+            print*, 'cc ishift/tshift/dlnA of (s1-s2): ', ishift_syn,tshift_syn,dlnA_syn
+            print*, 'cc double-difference ddtshift/ddlnA of (s1-s2)-(d1-d2): ' &
+                ,ddtshift_cc, ddlnA_cc
+            print* 
+            open(1,file=trim(output_dir)//'/dat_datcc',status='unknown')
+            open(2,file=trim(output_dir)//'/syn_syncc',status='unknown')
+            do  i = 1,nlen
+            write(1,'(I5,3e15.5)') i, d1_tw(i),d2_tw(i),d2_tw_cc(i)
+            write(2,'(I5,3e15.5)') i, s1_tw(i),s2_tw(i),s2_tw_cc(i)
             enddo
             close(1)
             close(2)
         endif
 
-    endif ! compute_adjoint
-   else ! DD CC adj
-       print*, '*** Double-difference CC (traveltime) misfit'
-       call CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
-        tstart1,tend1,tstart2,tend2,&
-        taper_percentage,taper_type,&
-        compute_adjoint,&
-        adj1,adj2,num,misfit)
+        !! DD multitaper-misfit
+
+        !-----------------------------------------------------------------------------
+        !  set up FFT for the frequency domain
+        !----------------------------------------------------------------------------- 
+        df = 1./(NPT*deltat)
+        dw = TWOPI * df
+        ! calculate frequency spacing of sampling points
+        df_new = 1.0 / (nlen*deltat)
+        ! assemble omega vector (NPT is the FFT length)
+        wvec(:) = 0.
+        do j = 1,NPT
+        if(j > NPT/2+1) then
+            wvec(j) = dw*(j-NPT-1)   ! negative frequencies in second half
+        else
+            wvec(j) = dw*(j-1)       ! positive frequencies in first half
+        endif
+        enddo
+        fvec = wvec / TWOPI
+
+        if( DISPLAY_DETAILS) then
+            print*,  'NPT/df/dw/df_new :', NPT,df,dw,df_new  
+            print*
+            print*, 'find the spectral boundaries for reliable measurement'
+            print*, 'min, max frequency limit for 1 : ',i_fstart1,i_fend1,fvec(i_fstart1),fvec(i_fend1)
+            print*, 'min, max frequency limit for 2 : ',i_fstart2,i_fend2,fvec(i_fstart2),fvec(i_fend2)
+            print*, 'effective bandwidth (Hz) : ',i_fstart,i_fend,fvec(i_fend)-fvec(i_fstart)
+            print*, 'half time-bandwidth product : ', NW
+            print*, 'number of tapers : ',ntaper
+            print*, 'resolution of multitaper (Hz) : ', NW/(nlen*deltat)
+            print*, 'number of segments of frequency bandwidth : ', ceiling((fvec(i_fend)-fvec(i_fstart))/(NW/(nlen*deltat)))
+            print*
+        endif
+
+        ! calculate the tapers
+        allocate(tapers(NPT,ntaper))
+        call staper(nlen, dble(NW), ntaper, tapers, NPT, ey1, ey2)
+
+        if( DISPLAY_DETAILS) then
+            do ictaper=1,ntaper
+            write(filename,'(i1)') ictaper
+            open(1,file=trim(output_dir)//'/'//'taper_t_'//trim(adjustl(filename)),status='unknown')
+            do i = 1,nlen
+            write(1,'(f15.2,E15.5)') (i-1)*deltat,tapers(i,ictaper)
+            ! write(1,'(f15.2,<ntaper>e15.5)') (i-1)*deltat,tapers(i,1:ntaper)
+            enddo
+            close(1)
+            enddo
+        endif
+
+        !! mt phase and ampplitude measurement 
+        call mt_measure(d1_tw,d2_tw_cc,npts,deltat,nlen,tshift_obs,dlnA_obs,i_fstart,i_fend,&
+            wvec,&
+            trans_func_obs,dtau_w_obs,dlnA_w_obs,err_dtau_mt_obs,err_dlnA_mt_obs)
+        call mt_measure(s1_tw,s2_tw_cc,npts,deltat,nlen,tshift_syn,dlnA_syn,i_fstart,i_fend,&
+            wvec,&
+            trans_func_syn,dtau_w_syn,dlnA_w_syn,err_dtau_mt_syn,err_dlnA_mt_syn)
+        ! double-difference measurement 
+        ddtau_w = dtau_w_syn-dtau_w_obs
+        ddlnA_w = dlnA_w_syn-dlnA_w_obs
+
+        ! misfit & adj
+        call mtm_DD_adj(s1_tw,s2_tw_cc,NPTS,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,&
+            err_dt_cc_obs,err_dt_cc_syn,err_dlnA_cc_obs,err_dlnA_cc_syn, &
+            err_dtau_mt_obs,err_dtau_mt_syn,err_dlnA_mt_obs,err_dlnA_mt_syn, &
+            compute_adjoint,&        
+            fp1_tw,fp2_tw,fq1_tw,fq2_tw,misfit_p,misfit_q)
+
+        ! MT misfit
+        if(misfit_type=='MT') then
+            ! MT misfit
+            do i=i_fstart,i_fend
+            write(IOUT,*) ddtau_w(i)*sqrt(dw)
+            enddo
+            misfit=misfit_p
+        elseif(misfit_type=='MA') then
+            ! MA misfit
+            do i=i_fstart,i_fend
+            write(IOUT,*) ddlnA_w(i)*sqrt(dw)
+            enddo
+            misfit=misfit_q
+        endif
+        num=i_fend-i_fstart+1
+
+        if(DISPLAY_DETAILS) then
+            !! write into file 
+            open(1,file=trim(output_dir)//'/trans_func_obs',status='unknown')
+            open(2,file=trim(output_dir)//'/trans_func_syn',status='unknown')
+            open(3,file=trim(output_dir)//'/ddtau_mtm',status='unknown')
+            open(4,file=trim(output_dir)//'/ddlnA_mtm',status='unknown')
+            open(5,file=trim(output_dir)//'/err_dtau_dlnA_mtm',status='unknown')
+            do  i = i_fstart,i_fend
+            write(1,'(f15.5,e15.5)') fvec(i),abs(trans_func_obs(i))
+            write(2,'(f15.5,e15.5)') fvec(i),abs(trans_func_syn(i))
+            write(3,'(f15.5,2e15.5)') fvec(i),ddtau_w(i),ddtshift_cc
+            write(4,'(f15.5,2e15.5)') fvec(i),ddlnA_w(i),ddlnA_cc
+            write(5,'(f15.5,2e15.5)') fvec(i),err_dtau_mt_obs(i)*err_dtau_mt_syn(i), &
+                err_dlnA_mt_obs(i)*err_dlnA_mt_syn(i)
+            enddo
+            close(1)
+            close(2)
+            close(3)
+            close(4)
+            close(5)
+        endif
+
+        !!DD cc-adjoint
+        if(COMPUTE_ADJOINT) then
+            ! initialization 
+            adj1(1:npts) = 0.0
+            adj2(1:npts) = 0.0
+
+            ! adjoint source
+            fp1_tw(1:nlen)= fp1_tw(1:nlen) * cc_max_obs *cc_max_obs
+            fp2_tw(1:nlen)= fp2_tw(1:nlen) * cc_max_obs *cc_max_obs
+            fq1_tw(1:nlen)= fq1_tw(1:nlen) * cc_max_obs *cc_max_obs
+            fq2_tw(1:nlen)= fq2_tw(1:nlen) * cc_max_obs *cc_max_obs
+
+            ! reverse window and taper again 
+            if(misfit_type=='MT') then
+                ! reverse window and taper again
+                call cc_window_inverse(fp1_tw,npts,i_tstart1,i_tend1,0.0,0.0,adj1)
+                adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1(i_tstart1:i_tend1)
+                call cc_window_inverse(fp2_tw,npts,i_tstart2,i_tend2,ishift_syn,0.0,adj2)
+                adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2(i_tstart2:i_tend2)
+
+            elseif(misfit_type=='MA') then
+                ! reverse window and taper again 
+                call cc_window_inverse(fq1_tw,npts,i_tstart1,i_tend1,0.0,0.0,adj1)
+                adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1(i_tstart1:i_tend1)
+                call cc_window_inverse(fq2_tw,npts,i_tstart2,i_tend2,ishift_syn,0.0,adj2)
+                adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2(i_tstart2:i_tend2)
+            endif
+
+            if( DISPLAY_DETAILS) then
+                open(1,file=trim(output_dir)//'/adj1_MT_win',status='unknown')
+                open(2,file=trim(output_dir)//'/adj2_MT_win',status='unknown')
+                do  i =  i_tstart1,i_tend1
+                write(1,*) i,adj1(i)
+                enddo
+                do  i =  i_tstart2,i_tend2
+                write(2,*) i,adj2(i)
+                enddo
+                close(1)
+                close(2)
+            endif
+
+        endif ! compute_adjoint
+    else ! DD CC adj
+        print*, '*** Double-difference CC (traveltime) misfit'
+        call CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
+            tstart1,tend1,tstart2,tend2,&
+            taper_percentage,taper_type,&
+            compute_adjoint,&
+            adj1,adj2,num,misfit)
     endif
- 
+
     deallocate(tas1,tas2)
     deallocate(tapers)
 end subroutine MT_misfit_DD
