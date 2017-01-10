@@ -139,7 +139,7 @@ program misfit_adjoint
             ! distribution estimated variance
             if(uncertainty .and. num_AD>1) then
             ! load measurement_AD
-            if(trim(measurement_types(itype))=='IP') then 
+            if(trim(measurement_types(itype))=='EP') then 
                 allocate(measurement_AD(2*num_AD))
             else
                 allocate(measurement_AD(num_AD))
@@ -196,7 +196,7 @@ program misfit_adjoint
             ! distribution estimated variance
             if(uncertainty .and. num_DD>1) then
             ! load measurement_DD
-            if(trim(measurement_types(itype))=='IP') then
+            if(trim(measurement_types(itype))=='EP') then
                 allocate(measurement_DD(2*num_DD))
             else
                 allocate(measurement_DD(num_DD))

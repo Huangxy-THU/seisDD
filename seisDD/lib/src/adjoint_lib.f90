@@ -50,9 +50,9 @@ subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,&
         if(DISPLAY_DETAILS) print*, 'ED (envelope-difference) misfit (s-d)'
         call ED_misfit(d,s,NSTEP,deltat,tstart,tend,taper_percentage,taper_type, &
             compute_adjoint,adj,num,misfit)
-    case ("IP")
-        if(DISPLAY_DETAILS) print*, 'IP (instantaneous phase) misfit (s-d)'
-        call IP_misfit(d,s,NSTEP,deltat,tstart,tend,taper_percentage,taper_type, &
+    case ("EP")
+        if(DISPLAY_DETAILS) print*, 'EP (exponentiated phase) misfit (s-d)'
+        call EP_misfit(d,s,NSTEP,deltat,tstart,tend,taper_percentage,taper_type, &
             compute_adjoint,adj,num,misfit)
     case ("MT")
         if(DISPLAY_DETAILS) print*, 'MT (multitaper traveltime) misfit (d-s)'
@@ -63,7 +63,7 @@ subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,&
         call MT_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
             'MA',compute_adjoint,adj,num,misfit)
     case default
-        print*, 'measurement_type must be among "CC"/"AM"/"WD"/"ET"/"ED"/"IP"/"MT"/"MA"/...';
+        print*, 'measurement_type must be among "CC"/"AM"/"WD"/"ET"/"ED"/"EP"/"MT"/"MA"/...';
         stop
     end select
 
@@ -112,9 +112,9 @@ subroutine misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
             taper_percentage,taper_type,&
             compute_adjoint,&
             adj,adj_ref,num,misfit)
-    case ("IP")
-        if(DISPLAY_DETAILS) print*, '*** Double-difference IP (instantaneous) misfit'
-        call IP_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,&
+    case ("EP")
+        if(DISPLAY_DETAILS) print*, '*** Double-difference EP (exponentiated) misfit'
+        call EP_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,&
             tstart,tend,tstart_ref,tend_ref,&
             taper_percentage,taper_type,&
             compute_adjoint,&
@@ -127,7 +127,7 @@ subroutine misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
             'MT',compute_adjoint,&
             adj,adj_ref,num,misfit)
     case default
-        print*, 'measurement_type must be among CC/WD/IP/MT ...';
+        print*, 'measurement_type must be among CC/WD/EP/MT ...';
         stop
 
     end select
@@ -652,9 +652,9 @@ subroutine ED_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
 
 end subroutine ED_misfit
 !-----------------------------------------------------------------------
-subroutine IP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,compute_adjoint,&
+subroutine EP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,compute_adjoint,&
         adj,num,misfit)
-    !! Instantaneous phase difference between d and s (need to be fixed)
+    !! Exponentiated phase difference between d and s (need to be fixed)
 
     use constants
     implicit none
@@ -687,7 +687,7 @@ subroutine IP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     real(kind=CUSTOM_REAL), dimension(npts) :: hilbt_d, hilbt_s, real_diff, imag_diff
 
     ! error
-    real(kind=CUSTOM_REAL) :: const, err_IP
+    real(kind=CUSTOM_REAL) :: const, err_EP
 
     ! adjoint
     real(kind=CUSTOM_REAL), dimension(npts) :: adj_tw
@@ -702,7 +702,7 @@ subroutine IP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     s_tw(1:nlen)=tas(1:nlen)*s(i_tstart:i_tend)
     d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
 
-    !! Instantaneous phase misfit
+    !! exponentiated phase misfit
     ! initialization 
     norm_s(:)=0.0
     norm_d(:)=0.0
@@ -735,21 +735,21 @@ subroutine IP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     real_diff(1:nlen)= (s_tw(1:nlen)/(E_s(1:nlen)+wtr_s) - d_tw(1:nlen)/(E_d(1:nlen)+wtr_d)) 
     imag_diff(1:nlen)= (hilbt_s(1:nlen)/(E_s(1:nlen)+wtr_s) - hilbt_d(1:nlen)/(E_d(1:nlen)+wtr_d)) 
 
-    ! IP misfit
+    ! EP misfit
     const=1.0
-    err_IP=1.0
+    err_EP=1.0
     if(NORMALIZE) then
         const = sqrt(sum((d_tw(1:nlen)/(E_d(1:nlen)+wtr_d))**2)*deltat + &
             sum((hilbt_d(1:nlen)/(E_d(1:nlen)+wtr_d))**2)*deltat)
-        err_IP=err_IP*const
+        err_EP=err_EP*const
     endif
     do i=1,nlen
-    write(IOUT,*) real_diff(i)*sqrt(deltat)/err_IP
-    write(IOUT,*) imag_diff(i)*sqrt(deltat)/err_IP
+    write(IOUT,*) real_diff(i)*sqrt(deltat)/err_EP
+    write(IOUT,*) imag_diff(i)*sqrt(deltat)/err_EP
     enddo
     num=nlen
-    misfit=0.5*sum(real_diff(1:nlen)**2*deltat)/err_IP**2 + &
-        0.5*sum(imag_diff(1:nlen)**2*deltat)/err_IP**2
+    misfit=0.5*sum(real_diff(1:nlen)**2*deltat)/err_EP**2 + &
+        0.5*sum(imag_diff(1:nlen)**2*deltat)/err_EP**2
 
     if(DISPLAY_DETAILS) then
         print*
@@ -769,7 +769,7 @@ subroutine IP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
         close(3)
     endif
 
-    !! Instantaneous phase adjoint
+    !! exponentiated phase adjoint
     if(COMPUTE_ADJOINT) then
         ! both real and imaginary
         E_ratio = (real_diff*hilbt_s**2 - imag_diff*s_tw*hilbt_s) /(E_s+wtr_s)**3
@@ -778,14 +778,14 @@ subroutine IP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
         call hilbert(hilbt_ratio,nlen)
 
         ! adjoint source
-        adj_tw(1:nlen)=(E_ratio(1:nlen) + hilbt_ratio(1:nlen))/err_IP**2
+        adj_tw(1:nlen)=(E_ratio(1:nlen) + hilbt_ratio(1:nlen))/err_EP**2
 
         ! reverse window and taper again 
         adj(i_tstart:i_tend)=tas(1:nlen)*adj_tw(1:nlen)
         deallocate(tas)
 
         if(DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_IP_win',status='unknown')
+            open(1,file=trim(output_dir)//'/adj_EP_win',status='unknown')
             do  i = i_tstart,i_tend
             write(1,'(I5,3e15.5)') i,d(i),s(i),adj(i)
             enddo
@@ -794,7 +794,7 @@ subroutine IP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
 
     endif
 
-end subroutine IP_misfit
+end subroutine EP_misfit
 !-----------------------------------------------------------------------
 subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,&
         misfit_type,compute_adjoint,&
@@ -1309,12 +1309,12 @@ subroutine WD_misfit_DD(d1,d2,s1,s2,npts,deltat,&
 
 end subroutine WD_misfit_DD
 !----------------------------------------------------------------------
-subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
+subroutine EP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         tstart1,tend1,tstart2,tend2,&
         taper_percentage,taper_type,&
         compute_adjoint,&
         adj1,adj2,num,misfit)
-    !! Instantaneous phase double-difference
+    !! exponentiated phase double-difference
 
     use constants
     implicit none
@@ -1333,7 +1333,7 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
 
     ! index
     integer :: i
-    real(kind=CUSTOM_REAL) :: const, err_DD_IP
+    real(kind=CUSTOM_REAL) :: const, err_DD_EP
 
     ! window
     integer :: nlen1,nlen2,nlen
@@ -1424,25 +1424,25 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         - (d1_tw(1:nlen)/(E_d1(1:nlen)+wtr_d1) - d2_tw(1:nlen)/(E_d2(1:nlen)+wtr_d2)) 
     imag_ddiff(1:nlen) = (hilbt_s1(1:nlen)/(E_s1(1:nlen)+wtr_s1) - hilbt_s2(1:nlen)/(E_s2(1:nlen)+wtr_s2)) &
         - (hilbt_d1(1:nlen)/(E_d1(1:nlen)+wtr_d1) - hilbt_d2(1:nlen)/(E_d2(1:nlen)+wtr_d2))
-    ! DD IP misfit
+    ! DD EP misfit
     const=1.0
-    err_DD_IP=1.0
+    err_DD_EP=1.0
     if(NORMALIZE) then
         const = sqrt(sum((d1_tw(1:nlen)/(E_d1(1:nlen)+wtr_d1) & 
             - d2_tw(1:nlen)/(E_d2(1:nlen)+wtr_d2))**2)*deltat + &
             sum((hilbt_d1(1:nlen)/(E_d1(1:nlen)+wtr_d1) &
             - hilbt_d2(1:nlen)/(E_d2(1:nlen)+wtr_d2))**2)*deltat)
-        err_DD_IP=err_DD_IP*const
+        err_DD_EP=err_DD_EP*const
     endif
     do i=1,nlen
-    write(IOUT,*) real_ddiff(i)*sqrt(deltat)/err_DD_IP
-    write(IOUT,*) imag_ddiff(i)*sqrt(deltat)/err_DD_IP
+    write(IOUT,*) real_ddiff(i)*sqrt(deltat)/err_DD_EP
+    write(IOUT,*) imag_ddiff(i)*sqrt(deltat)/err_DD_EP
     enddo
     num=nlen
-    misfit=0.5*sum(real_ddiff(1:nlen)**2*deltat)/err_DD_IP**2 + &
-        0.5*sum(imag_ddiff(1:nlen)**2*deltat)/err_DD_IP**2
+    misfit=0.5*sum(real_ddiff(1:nlen)**2*deltat)/err_DD_EP**2 + &
+        0.5*sum(imag_ddiff(1:nlen)**2*deltat)/err_DD_EP**2
 
-    !! DD Instantaneous phase adjoint
+    !! DD exponentiated phase adjoint
     if(COMPUTE_ADJOINT) then
         ! initialization 
         adj1_tw(:) = 0.0
@@ -1458,7 +1458,7 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         call hilbert(hilbt_ratio,nlen)
         ! adjoint source
         adj1_tw(1:nlen)=E_ratio(1:nlen) + hilbt_ratio(1:nlen)
-        adj1_tw(1:nlen)=adj1_tw(1:nlen)/err_DD_IP**2
+        adj1_tw(1:nlen)=adj1_tw(1:nlen)/err_DD_EP**2
 
         !! adjoint source2
         E_ratio(:) = 0.0
@@ -1469,15 +1469,15 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         call hilbert(hilbt_ratio,nlen)
         ! adjoint source
         adj2_tw(1:nlen)=E_ratio(1:nlen) + hilbt_ratio(1:nlen)
-        adj2_tw(1:nlen)=adj2_tw(1:nlen)/err_DD_IP**2
+        adj2_tw(1:nlen)=adj2_tw(1:nlen)/err_DD_EP**2
 
         ! reverse window and taper again 
         adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1_tw(1:nlen1)
         adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2_tw(1:nlen2)
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj1_IP_win',status='unknown')
-            open(2,file=trim(output_dir)//'/adj2_IP_win',status='unknown')
+            open(1,file=trim(output_dir)//'/adj1_EP_win',status='unknown')
+            open(2,file=trim(output_dir)//'/adj2_EP_win',status='unknown')
             do  i =  i_tstart1,i_tend1
             write(1,*) i,adj1(i)
             enddo
@@ -1491,7 +1491,7 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     endif
     deallocate(tas1,tas2)
 
-end subroutine IP_misfit_DD
+end subroutine EP_misfit_DD
 !----------------------------------------------------------------------
 subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
         tstart1,tend1,tstart2,tend2,&

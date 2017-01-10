@@ -44,7 +44,7 @@ NSRC=1
 data_list='y'
 
 ### kernel construction
-# measurement type (CC WD ET ED IP MT MA) 
+# measurement type (CC WD ET ED EP MT MA) 
 measurement_list=CC
 # misfit_type (AD, DD, AD+DD)
 misfit_type_list=DD
