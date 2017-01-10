@@ -33,7 +33,11 @@ subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,&
     case ("CC")
         if(DISPLAY_DETAILS) print*, 'CC (traveltime) misfit (s-d)'
         call CC_misfit(d,s,NSTEP,deltat,tstart,tend,taper_percentage,taper_type, &
-            compute_adjoint,adj,num,misfit)
+            'dt',compute_adjoint,adj,num,misfit)
+    case ("AM")
+        if(DISPLAY_DETAILS) print*, 'AM (amplitude) misfit (s-d)'
+        call CC_misfit(d,s,NSTEP,deltat,tstart,tend,taper_percentage,taper_type, &
+            'am',compute_adjoint,adj,num,misfit)
     case ("WD")
         if(DISPLAY_DETAILS) print*, 'WD (waveform-difference) misfit (s-d)'
         call WD_misfit(d,s,NSTEP,deltat,tstart,tend,taper_percentage,taper_type, &
@@ -59,7 +63,7 @@ subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,&
         call MT_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
             'MA',compute_adjoint,adj,num,misfit)
     case default
-        print*, 'measurement_type must be among "CC"/"WD"/"ET"/"ED"/"IP"/"MT"/"MA"/...';
+        print*, 'measurement_type must be among "CC"/"AM"/"WD"/"ET"/"ED"/"IP"/"MT"/"MA"/...';
         stop
     end select
 
@@ -181,7 +185,9 @@ subroutine WD_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     !! WD misfit
     const=1.0
     err_WD=1.0
-    const = sqrt(sum(d_tw(1:nlen)**2)*deltat)
+    if(NORMALIZE) then
+        const = sqrt(sum(d_tw(1:nlen)**2)*deltat)
+    endif
     err_WD=err_WD*const
     do i=1,nlen 
     write(IOUT,*) (s_tw(i)-d_tw(i))*sqrt(deltat)/err_WD
@@ -226,7 +232,8 @@ subroutine WD_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
 
 end subroutine WD_misfit
 !-----------------------------------------------------------------------
-subroutine CC_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,compute_adjoint,&
+subroutine CC_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,&
+        misfit_type,compute_adjoint,&
         adj,num,misfit)
     !! CC traveltime shift between d and s
 
@@ -240,6 +247,7 @@ subroutine CC_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
     character(len=4), intent(in) :: taper_type
     integer, intent(in) :: npts
+    character(len=2), intent(in) :: misfit_type
     logical, intent(in) :: compute_adjoint
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
@@ -260,7 +268,7 @@ subroutine CC_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     real(kind=CUSTOM_REAL) :: err_dt_cc,err_dlnA_cc
 
     ! error
-    real(kind=CUSTOM_REAL) :: const, err_CC
+    real(kind=CUSTOM_REAL) :: const, err_CC, err_AM
 
     ! adjoint
     real(kind=CUSTOM_REAL) :: Mtr
@@ -277,11 +285,12 @@ subroutine CC_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
 
     !! CC misfit
-    call xcorr_calc(s_tw,d_tw,npts,1,nlen,ishift,dlnA,cc_max) ! T(s-d)
+    call xcorr_calc(d_tw,s_tw,npts,1,nlen,ishift,dlnA,cc_max) ! T(d-s)
 
     !! cc_error
     const=1.0
     err_CC=1.0
+    err_AM=1.0
     err_dt_cc=1.0
     err_dlnA_cc=1.0
     if(USE_ERROR_CC) call cc_error(d_tw,s_tw,npts,deltat,nlen,ishift,dlnA,&
@@ -289,19 +298,25 @@ subroutine CC_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     if(NORMALIZE) then
         ! arrival time estimated from peak of waves
         const=(i_tstart+MAXLOC(abs(d_tw),1))*deltat
-        err_CC=err_dt_cc*const 
-    endif        
-    tshift = ishift*deltat  
-    write(IOUT,*) tshift/err_CC
+    endif
+    err_CC=err_dt_cc*const
+    err_AM=err_dlnA_CC
+    if(misfit_type=='dt') then 
+        tshift = ishift*deltat  
+        write(IOUT,*) tshift/err_CC
+        misfit=0.5*(tshift/err_CC)**2
+    elseif(misfit_type=='am') then
+        write(IOUT,*) dlnA/err_AM
+        misfit=0.5*(dlnA/err_AM)**2
+    endif
     num=1
-    misfit=0.5*(tshift/err_CC)**2
 
     if( DISPLAY_DETAILS) then
         print*
         print*, 'time-domain winodw'
         print*, 'time window boundaries : ',i_tstart,i_tend
         print*, 'time window length (sample /  second) : ', nlen, nlen*deltat
-        print*, 'cc ishift/tshift/dlnA of s-d : ', ishift,tshift,dlnA
+        print*, 'cc ishift/tshift/dlnA of d-s : ', ishift,tshift,dlnA
         open(1,file=trim(output_dir)//'/dat_syn_win',status='unknown')
         do  i = 1,nlen
         write(1,'(I5,2e15.5)') i, d_tw(i),s_tw(i)
@@ -311,21 +326,30 @@ subroutine CC_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
 
     !! cc adjoint
     if(COMPUTE_ADJOINT) then
-        ! computer velocity 
-        call compute_vel(s_tw,npts,deltat,nlen,s_tw_vel)
-
-        ! constant on the bottom 
-        Mtr=-sum(s_tw_vel(1:nlen)*s_tw_vel(1:nlen))*deltat
-
-        ! adjoint source
-        adj_tw(1:nlen)=  tshift*s_tw_vel(1:nlen)/Mtr/err_CC**2 
+        if(misfit_type=='dt') then
+            ! computer velocity 
+            call compute_vel(s_tw,npts,deltat,nlen,s_tw_vel)
+            ! constant on the bottom 
+            Mtr=-sum(s_tw_vel(1:nlen)*s_tw_vel(1:nlen))*deltat
+            ! adjoint source
+            adj_tw(1:nlen)=-1.0*tshift*s_tw_vel(1:nlen)/Mtr/err_CC**2 
+        elseif(misfit_type=='am') then 
+            ! constant on the bottom
+            Mtr=sum(s_tw(1:nlen)*s_tw(1:nlen))*deltat 
+            ! adjoint source
+            adj_tw(1:nlen)=-1.0*dlnA*s_tw(1:nlen)/Mtr/err_AM**2
+        endif
 
         ! reverse window and taper again 
         adj(i_tstart:i_tend)=tas(1:nlen)*adj_tw(1:nlen)
         deallocate(tas)
 
         if( DISPLAY_DETAILS) then
-            open(1,file=trim(output_dir)//'/adj_CC_win',status='unknown')
+            if(misfit_type=='dt') then
+                open(1,file=trim(output_dir)//'/adj_CC_win',status='unknown')
+            elseif(misfit_type=='am') then
+                open(1,file=trim(output_dir)//'/adj_AM_win',status='unknown')
+            endif
             do  i =  i_tstart,i_tend
             write(1,'(I5,e15.5)') i,adj(i)
             enddo
@@ -981,7 +1005,7 @@ subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,
     else ! CC adj
         if(DISPLAY_DETAILS) print*, 'CC (traveltime) misfit (s-d)'
         call CC_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type, &
-            compute_adjoint,adj,num,misfit)
+            misfit_type,compute_adjoint,adj,num,misfit)
     endif
     deallocate(tapers)
 

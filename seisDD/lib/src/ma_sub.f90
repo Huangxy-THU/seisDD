@@ -886,16 +886,9 @@ subroutine cc_error(data_dtw,syn_dtw,npts,deltat,nlen,ishift,dlnA,sigma_dt,sigma
     real(kind=CUSTOM_REAL) :: sigma_dt_top, sigma_dlnA_top, sigma_dt_bot, sigma_dlnA_bot
     integer :: i,j
 
-    ! make corrections to syn based on cc measurement
-    syn_dtw_cc(:)=0.0
-    do i=1,nlen
-    j=i-ishift 
-    if(j>=1 .and. j <=nlen) then
-        syn_dtw_cc(i) = syn_dtw(j) * exp(dlnA)
-    endif
-    enddo
+    ! fixed window for d, correct the window for s
+    call cc_window(syn_dtw,npts,1,nlen,ishift,dlnA,syn_dtw_cc)
 
-    syn_vtw_cc(:)=0.0
     ! compute cc-corrected synthetic velocity
     call compute_vel(syn_dtw_cc,npts,deltat,nlen,syn_vtw_cc)
 
