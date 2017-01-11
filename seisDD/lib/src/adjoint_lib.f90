@@ -683,7 +683,6 @@ subroutine EP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     ! hilbert transformation
     real(kind=CUSTOM_REAL) :: wtr_d, wtr_s
     real(kind=CUSTOM_REAL), dimension(npts) :: E_d,E_s,E_ratio,hilbt_ratio
-    real(kind=CUSTOM_REAL), dimension(npts) :: norm_s, norm_d
     real(kind=CUSTOM_REAL), dimension(npts) :: hilbt_d, hilbt_s, real_diff, imag_diff
 
     ! error
@@ -704,8 +703,6 @@ subroutine EP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
 
     !! exponentiated phase misfit
     ! initialization 
-    norm_s(:)=0.0
-    norm_d(:)=0.0
     real_diff(:) = 0.0
     imag_diff(:) = 0.0
     E_d(:) = 0.0
@@ -730,8 +727,6 @@ subroutine EP_misfit(d,s,npts,deltat,tstart,tend,taper_percentage,taper_type,com
     wtr_s=wtr_env*maxval(E_s)
 
     !! diff for real & imag part
-    norm_s(1:nlen)=sqrt((s_tw(1:nlen)/(E_s(1:nlen)+wtr_s))**2+(hilbt_s(1:nlen)/(E_s(1:nlen)+wtr_s))**2)
-    norm_d(1:nlen)=sqrt((d_tw(1:nlen)/(E_d(1:nlen)+wtr_d))**2+(hilbt_d(1:nlen)/(E_d(1:nlen)+wtr_d))**2)
     real_diff(1:nlen)= (s_tw(1:nlen)/(E_s(1:nlen)+wtr_s) - d_tw(1:nlen)/(E_d(1:nlen)+wtr_d)) 
     imag_diff(1:nlen)= (hilbt_s(1:nlen)/(E_s(1:nlen)+wtr_s) - hilbt_d(1:nlen)/(E_d(1:nlen)+wtr_d)) 
 
