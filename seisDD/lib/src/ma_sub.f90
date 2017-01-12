@@ -154,14 +154,6 @@ subroutine mt_measure(dat1,dat2,npts,deltat,nlen,tshift_cc,dlnA_cc, i_fstart,i_f
     dtau_w(i_fstart:i_fend) = dtau_mtm(i_fstart:i_fend)
     dlnA_w(i_fstart:i_fend) = dlnA_mtm(i_fstart:i_fend)
 
-    if(DISPLAY_DETAILS) then
-        open(1,file=trim(output_dir)//'/dtau_dlnA',status='unknown')
-        do  i =  i_fstart,i_fend
-        write(1,'(3E15.5)') wvec(i)/TWOPI,dtau_w(i),dlnA_w(i)
-        enddo
-        close(1)
-    endif
-
     !-------------------------------------------------------------------------------
     ! multitaper error estimation
     !-------------------------------------------------------------------------------
@@ -276,7 +268,7 @@ subroutine mt_measure(dat1,dat2,npts,deltat,nlen,tshift_cc,dlnA_cc, i_fstart,i_f
 
 end subroutine mt_measure
 ! ------------------------------------------------------------------------------------
-subroutine mtm_adj(syn,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
+subroutine mt_adj(syn,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
         err_dt_cc,err_dlnA_cc, &
         err_dtau_mt,err_dlnA_mt, &
         compute_adjoint, &
@@ -472,9 +464,9 @@ subroutine mtm_adj(syn,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
         deallocate(syn_vtw_ho_all)
     endif ! compute_adjoint
 
-end subroutine mtm_adj
+end subroutine mt_adj
 ! ------------------------------------------------------------------------------------
-subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,&
+subroutine mt_adj_DD(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,&
         err_dt_cc_obs,err_dt_cc_syn,err_dlnA_cc_obs,err_dlnA_cc_syn, &
         err_dtau_mt_obs,err_dtau_mt_syn,err_dlnA_mt_obs,err_dlnA_mt_syn, &
         compute_adjoint,fp1,fp2,fq1,fq2,misfit_p,misfit_q)
@@ -719,7 +711,7 @@ subroutine mtm_DD_adj(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,
         deallocate(s2_vtw_ho_all)
     endif ! compute_adjoint 
 
-end subroutine mtm_DD_adj
+end subroutine mt_adj_DD
 
 !==============================================================================
 !-----------------------------------------------------------------------
