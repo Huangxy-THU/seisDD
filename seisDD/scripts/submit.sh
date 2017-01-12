@@ -119,13 +119,14 @@ read -p "ready to submit job (y/n)?" yn
 if [ $yn == 'y' ]; then
     if [ $system == 'slurm' ]; then
         echo "slurm system ..."
-        echo "sbatch -p $queue --nodes=$nodes --ntasks=$ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
-        sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
+        echo "sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
+              sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
 
     elif [ $system == 'pbs' ]; then
+        # Benchmarked by Chao Zhang (dkzhangchao@gmail.com) 
         echo "pbs system ..."
-        echo "qsub -q $queue select=$nodes:ncpus=$max_nproc_per_node:mpiprocs=$nproc -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh"
-        qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh
+        echo "qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh"
+              qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh
     fi
 fi
 echo

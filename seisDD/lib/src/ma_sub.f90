@@ -368,8 +368,9 @@ subroutine mt_adj(syn,npts,deltat,nlen,df,i_fstart,i_fend,dtau_w,dlnA_w,&
     endif
 
     !! misfit
-    misfit_p=0.5*sum(dtau_w(i_fstart:i_fend)**2*wp_taper(i_fstart:i_fend)*df)
-    misfit_q=0.5*sum(dlnA_w(i_fstart:i_fend)**2*wq_taper(i_fstart:i_fend)*df)
+    !! add 2.0 to consider negative and positive freq in [-inf inf] intergration 
+    misfit_p=0.5*2.0*sum(dtau_w(i_fstart:i_fend)**2*wp_taper(i_fstart:i_fend)*df)
+    misfit_q=0.5*2.0*sum(dlnA_w(i_fstart:i_fend)**2*wq_taper(i_fstart:i_fend)*df)
 
     if(compute_adjoint) then
         ! allocate MT variables
@@ -566,8 +567,9 @@ subroutine mt_adj_DD(s1,s2,npts,deltat,nlen,df,i_fstart,i_fend,ddtau_w,ddlnA_w,&
         close(1)
     endif
     !! misfit
-    misfit_p=0.5*sum(ddtau_w(i_fstart:i_fend)**2*wp_taper(i_fstart:i_fend)*df)
-    misfit_q=0.5*sum(ddlnA_w(i_fstart:i_fend)**2*wq_taper(i_fstart:i_fend)*df)
+    !! add 2.0 to consider negative and positive freq in [-inf inf] intergration
+    misfit_p=0.5*2.0*sum(ddtau_w(i_fstart:i_fend)**2*wp_taper(i_fstart:i_fend)*df)
+    misfit_q=0.5*2.0*sum(ddlnA_w(i_fstart:i_fend)**2*wq_taper(i_fstart:i_fend)*df)
 
     if(compute_adjoint) then 
         ! allocate MT variables

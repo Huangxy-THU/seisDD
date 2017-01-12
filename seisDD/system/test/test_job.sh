@@ -29,6 +29,8 @@ elif [ $system == 'pbs' ]; then
     echo "$PBS_JOBID"  >  ./job_info/JobID
 fi
 
+export SCRIPTS_DIR="$package_path/scripts"
+
 echo
 echo "       This is to check your system: $system "
 echo "**********************************************************"
@@ -43,15 +45,32 @@ if [ $system == 'slurm' ]; then
     # request $NPROC CPUs for $ntasks tasks 
     # multiple CPUs for the multithreaded tasks
     # srun - distribute task to nodes under sbatch
-    #srun -n $ntasks -c $NPROC -l -W 0  test/hello.sh 2>./job_info/error_run
-    srun -l -W 0  test/test_srun.sh 2>./job_info/error_run 
+    echo 
+    echo "srun -n $ntasks -c $NPROC -l -W 0  test/test_srun.sh"
+    srun -n $ntasks -c $NPROC -l -W 0  test/test_srun.sh 2>./job_info/error_run 
 elif [ $system == 'pbs' ]; then
     # pbsdsh - distribute task to nodes under pbs
-    pbsdsh -v test/test_pbsdsh.sh #2>./job_info/error_run
+    # pbsdsh -v test/test_pbsdsh.sh #2>./job_info/error_run
+    sh $SCRIPTS_DIR/pbsssh.sh test/test_pbs.sh
 fi
+
 echo 
-echo "test mpirun ..."
-mpirun -np $NPROC test/test_mpi.sh 2>./job_info/error_mpi 
+echo "mpirun -np $ntasks test/test_mpi.sh"
+mpirun -np $ntasks test/test_mpi.sh 2>./job_info/error_mpi 
+
+echo 
+echo "mpiexec -np $ntasks test/test_mpi.sh"
+mpiexec -np $ntasks test/test_mpi.sh 2>./job_info/error_mpi
+
+
+echo 
+echo "mpirun -np $NPROC $SUBMIT_DIR/test/hello_mpi.exe"
+mpirun -np $NPROC $SUBMIT_DIR/test/hello_mpi.exe
+
+echo 
+echo "mpiexec -np $NPROC $SUBMIT_DIR/test/hello_mpi.exe"
+mpiexec -np $NPROC $SUBMIT_DIR/test/hello_mpi.exe
+
 
 ENDTIME=$(date +%s)
 Ttaken=$(($ENDTIME - $STARTTIME))

@@ -6,7 +6,7 @@ source $SUBMIT_DIR/parameter
 # local id (from 0 to $ntasks-1)
 iproc=${OMPI_COMM_WORLD_RANK}
 
-echo "test mpirun iproc=$iproc"
+echo "test_mpi iproc=$iproc"
 
 # run serial exe 
 $SUBMIT_DIR/test/hello.exe

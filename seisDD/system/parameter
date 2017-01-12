@@ -4,7 +4,9 @@ system='slurm'  # slurm, or pbs
 queue='debug'
 max_nproc_per_node=16 # max number of cpus per node
 ntasks=2 # ntasks
-NPROC=4  # cpu for each task
+NPROC=4  # processors for each task
 WallTime=1 # request time
 FC='ifort'
 MPIFC='mpif90'
+
+package_path="$seisDD/seisDD"

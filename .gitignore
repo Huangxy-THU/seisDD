@@ -30,8 +30,9 @@ specfem2d/EXAMPLES/*
 seisDD/lib/tests
 
 # system 
-seisDD/system/job_info
-seisDD/system/test/*exe
+seisDD/system
+#seisDD/system/job_info
+#seisDD/system/test/*exe
 
 # user private EXAMPLES folder
 EXAMPLES/*
