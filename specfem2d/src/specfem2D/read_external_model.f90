@@ -54,7 +54,7 @@
   real(kind=CUSTOM_REAL) :: tmp1, tmp2,tmp3
   double precision :: vs_val,vp_val,rho_val
   character(len=150) :: inputname
-
+  logical :: st  !YY
 ! note: we read in external models once the basic mesh with its geometry and GLL points has been setup.
 !       External models define new velocity/material parameters which need to be defined on all GLL points.
 
@@ -132,9 +132,33 @@
     read(1001) vsext
     close(1001)
 
-    ! default no attenuation
-    QKappa_attenuationext(:,:,:) = 9999.d0
-    Qmu_attenuationext(:,:,:) = 9999.d0
+    !YY: read Q models
+    write(inputname,'(a,i6.6,a)') 'DATA/proc',myrank,'_QKappa.bin' !YY
+    inquire(file=inputname,exist=st) !YY
+    if (st) then                   
+        open(unit = 1001, file = inputname, &
+            status='old',action='read',form='unformatted',iostat=ier)
+        if (ier /= 0) stop 'Error opening DATA/proc*****_QKappa.bin file.'
+
+        read(1001) QKappa_attenuationext
+        close(1001)
+    else
+        ! default no attenuation
+        QKappa_attenuationext(:,:,:) = 9999.d0
+    endif
+    write(inputname,'(a,i6.6,a)') 'DATA/proc',myrank,'_Qmu.bin' !YY
+    inquire(file=inputname,exist=st) !YY
+    if (st) then
+        open(unit = 1001, file = inputname, &
+            status='old',action='read',form='unformatted',iostat=ier)
+        if (ier /= 0) stop 'Error opening DATA/proc*****_Qmu.bin file.'
+        
+        read(1001) Qmu_attenuationext
+        close(1001)
+    else
+        ! default no attenuation
+        Qmu_attenuationext(:,:,:) = 9999.d0
+    endif
 
   case ('binary_voigt')
     ! Voigt model
