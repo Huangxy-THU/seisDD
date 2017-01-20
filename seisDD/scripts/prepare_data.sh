@@ -43,9 +43,7 @@ echo "iproc = $iproc, isource_start = $isource_start, nsrc_this_task = ${nsrc_th
 for ((isrc_this_task=1; isrc_this_task<=${nsrc_this_task}; isrc_this_task++));
 do 
     let isource=`echo $isource_start, $isrc_this_task |awk '{print $1 + $2 }'` 
-    if $DISPLAY_DETAILS; then
-        echo "iproc = $iproc, isource = $isource"
-    fi
+    echo "iproc = $iproc, isource = $isource"
 
     STARTTIME=$(date +%s)
     if  $ExistDATA && [ -d "$DATA_DIR" ]; then
@@ -53,12 +51,14 @@ do
     else
         sh $SCRIPTS_DIR/Forward_${solver}.sh $isource $NPROC_SPECFEM $data_tag $data_list \
             $velocity_dir $SAVE_FORWARD $WORKING_DIR $SUBMIT_RESULT $job 2>./job_info/error_Forward_simulation
-        cp -r $velocity_dir $SUBMIT_RESULT/m_target
+        if [ $isource -eq 1 ] && [ -d "$m_target" ]; then
+            cp -r $velocity_dir $SUBMIT_RESULT/m_target
+        fi
     fi
  if [ $isource -eq 1 ] ; then
      ENDTIME=$(date +%s)
      Ttaken=$(($ENDTIME - $STARTTIME))
-     echo "Data preparation took $Ttaken seconds"
+     echo "Data preparation took $Ttaken seconds for one source"
  fi
 done
 
