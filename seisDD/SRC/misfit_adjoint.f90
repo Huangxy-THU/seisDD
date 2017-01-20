@@ -698,7 +698,7 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
     
         if(compute_adjoint) then
             call process_adj_trace(adj,dis_sr1)
-            call process_adj_trace(adj_ref,,dis_sr2)
+            call process_adj_trace(adj_ref,dis_sr2)
             if(DISPLAY_DETAILS) then
                 print*, 'Min/Max of adj :',minval(adj(:)),maxval(adj(:))
                 print*, 'Min/Max of adj_ref:',minval(adj_ref(:)),maxval(adj_ref(:))
