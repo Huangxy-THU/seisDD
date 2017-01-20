@@ -18,6 +18,8 @@ specfem2d/*__genmod.f90
 specfem2d/.*swp
 specfem2d/.*swo
 specfem2d/*~
+# exclude src
+!specfem2d/src
 # scotch 
 specfem2d/src/meshfem2D/scotch_5.1.12b/*
 specfem2d/src/meshfem2D/scotch_5.1.12b/lib/*
